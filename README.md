@@ -140,7 +140,3 @@ Browser (Attendee / Staff)
 **Google Antigravity × Hack2Skill — Physical Event Experience Challenge 2026**
 
 ---
-
-##  License
-
-MIT License — free to use, modify, and distribute.
