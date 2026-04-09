@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VenueFlow — Smart Venue Experience</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070c14;
+  --surface: #0c1520;
+  --card: #101c2c;
+  --card2: #0f1a28;
+  --border: rgba(255,255,255,0.07);
+  --accent: #00e5ff;
+  --accent2: #ff3d71;
+  --accent3: #a259ff;
+  --green: #00e096;
+  --amber: #ffaa00;
+  --text: #dce8f5;
+  --muted: #4e6070;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #1e3048; border-radius: 3px; }
+
+/* ── NAV ── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 58px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,12,20,0.96);
+  backdrop-filter: blur(24px);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  letter-spacing: 4px;
+  background: linear-gradient(100deg, var(--accent) 30%, var(--accent3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo span {
+  -webkit-text-fill-color: rgba(255,255,255,0.2);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  font-family: var(--font-body);
+  font-weight: 300;
+  margin-left: 0.5rem;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.tab-btn {
+  padding: 0.35rem 1.1rem;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab-btn.active {
+  background: rgba(0,229,255,0.12);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(0,229,255,0.1);
+}
+.tab-btn:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.04); }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.live-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(0,224,150,0.08);
+  border: 1px solid rgba(0,224,150,0.2);
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  letter-spacing: 1px;
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.4; transform:scale(0.7); }
+}
+
+.venue-name {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+.venue-name strong { color: var(--text); font-weight: 600; }
+
+/* ── HERO TICKER ── */
+.ticker-bar {
+  background: linear-gradient(90deg, rgba(0,229,255,0.06), rgba(162,89,255,0.06));
+  border-bottom: 1px solid var(--border);
+  padding: 0.45rem 0;
+  overflow: hidden;
+  position: relative;
+}
+.ticker-inner {
+  display: flex;
+  gap: 3rem;
+  animation: ticker 30s linear infinite;
+  white-space: nowrap;
+  width: max-content;
+}
+.ticker-inner:hover { animation-play-state: paused; }
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.ticker-item .tag {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.tag-ok { background: rgba(0,224,150,0.15); color: var(--green); }
+.tag-warn { background: rgba(255,170,0,0.15); color: var(--amber); }
+.tag-alert { background: rgba(255,61,113,0.15); color: var(--accent2); }
+
+/* ── GRID LAYOUT ── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto auto 1fr;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── STAT STRIP ── */
+.stat-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.stat-card:hover { border-color: rgba(0,229,255,0.2); }
+.stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  letter-spacing: 1px;
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+
+.stat-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stat-trend { font-weight: 600; }
+.trend-up { color: var(--accent2); }
+.trend-down { color: var(--green); }
+.trend-flat { color: var(--amber); }
+
+.stat-bar {
+  margin-top: 0.6rem;
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s ease;
+}
+
+/* ── SECTION HEADER ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.section-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* ── VENUE MAP ── */
+.map-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  grid-row: span 2;
+}
+
+.venue-canvas {
+  width: 100%;
+  aspect-ratio: 1.4;
+  border-radius: 10px;
+  background: #091422;
+  border: 1px solid rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+canvas#venueMap {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.map-legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+
+/* ── RIGHT SIDEBAR ── */
+.sidebar { display: flex; flex-direction: column; gap: 1.1rem; }
+
+/* ── GATE PANEL ── */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+}
+
+.gate-grid { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.gate-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid transparent;
+  transition: all 0.25s;
+  cursor: pointer;
+}
+.gate-row:hover { border-color: var(--border); background: rgba(255,255,255,0.05); }
+.gate-row.alert-gate { border-color: rgba(255,61,113,0.2); background: rgba(255,61,113,0.04); }
+
+.gate-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.gate-info { flex: 1; }
+.gate-name { font-size: 0.82rem; font-weight: 600; }
+.gate-detail { font-size: 0.7rem; color: var(--muted); margin-top: 1px; }
+
+.gate-wait {
+  text-align: right;
+}
+.wait-time {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.wait-label { font-size: 0.62rem; color: var(--muted); }
+
+.status-bar {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.06);
+  margin-top: 0.3rem;
+}
+.status-fill { height: 100%; border-radius: 2px; transition: width 1.5s ease; }
+
+/* ── ALERTS ── */
+.alerts-list { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.alert-item {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 9px;
+  border-left: 3px solid;
+  background: rgba(255,255,255,0.02);
+  animation: slideIn 0.4s ease;
+}
+@keyframes slideIn {
+  from { opacity:0; transform: translateX(10px); }
+  to { opacity:1; transform: translateX(0); }
+}
+
+.alert-item.info { border-color: var(--accent); background: rgba(0,229,255,0.04); }
+.alert-item.warn { border-color: var(--amber); background: rgba(255,170,0,0.04); }
+.alert-item.danger { border-color: var(--accent2); background: rgba(255,61,113,0.05); }
+.alert-item.success { border-color: var(--green); background: rgba(0,224,150,0.04); }
+
+.alert-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.alert-body { flex: 1; }
+.alert-title { font-size: 0.78rem; font-weight: 600; }
+.alert-msg { font-size: 0.7rem; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.alert-time { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); flex-shrink: 0; }
+
+/* ── BOTTOM ROW ── */
+.bottom-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.1rem;
+}
+
+/* ── CONCESSION PANEL ── */
+.concession-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.concession-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.concession-info { flex: 1; }
+.concession-name { font-size: 0.78rem; font-weight: 500; }
+.concession-bar-wrap {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.concession-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.concession-fill { height: 100%; border-radius: 3px; transition: width 1.5s ease; }
+.concession-wait {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  width: 32px;
+  text-align: right;
+}
+
+/* ── CROWD FLOW CHART ── */
+#flowChart {
+  width: 100%;
+  height: 160px;
+}
+
+/* ── NAVIGATION ASSISTANT ── */
+.nav-assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.nav-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-input {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.nav-input:focus { border-color: rgba(0,229,255,0.3); }
+.nav-input::placeholder { color: var(--muted); }
+
+.nav-go-btn {
+  padding: 0.6rem 1.1rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  border: none;
+  border-radius: 8px;
+  color: #07101c;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.nav-go-btn:hover { opacity: 0.85; }
+
+.nav-result {
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.12);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+.nav-result .route-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.step-num {
+  width: 18px; height: 18px;
+  background: var(--accent);
+  color: #07101c;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── EMERGENCY BANNER ── */
+.emergency-banner {
+  display: none;
+  background: rgba(255,61,113,0.1);
+  border: 1px solid rgba(255,61,113,0.3);
+  border-radius: 10px;
+  padding: 0.85rem 1.2rem;
+  grid-column: 1 / -1;
+  margin: 0 1.5rem;
+  animation: emergencyPulse 2s ease infinite;
+}
+@keyframes emergencyPulse {
+  0%,100% { border-color: rgba(255,61,113,0.3); }
+  50% { border-color: rgba(255,61,113,0.7); }
+}
+.emergency-banner.show { display: flex; align-items: center; gap: 1rem; }
+.emergency-title { font-family: var(--font-display); font-size: 1.1rem; letter-spacing: 2px; color: var(--accent2); }
+.emergency-msg { font-size: 0.8rem; color: var(--muted); }
+.emergency-close { margin-left: auto; cursor: pointer; color: var(--muted); font-size: 1.2rem; }
+
+/* ── TABS CONTENT ── */
+.tab-content { display: none; }
+.tab-content.active { display: contents; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .main-layout { grid-template-columns: 1fr; }
+  .stat-strip { grid-template-columns: repeat(3, 1fr); }
+  .bottom-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 680px) {
+  .stat-strip { grid-template-columns: repeat(2, 1fr); }
+  .bottom-row { grid-template-columns: 1fr; }
+  .nav-tabs { display: none; }
+  nav { padding: 0 1rem; }
+  .main-layout { padding: 1rem; }
+}
+
+/* ── TOOLTIP ── */
+.tooltip-box {
+  position: fixed;
+  background: #1a2d42;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.75rem;
+  pointer-events: none;
+  z-index: 500;
+  min-width: 130px;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.tooltip-name { font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.tooltip-row { display: flex; justify-content: space-between; gap: 1rem; color: var(--muted); }
+.tooltip-val { color: var(--text); }
+
+/* ── SECTION BADGE ── */
+.badge-pulse {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: pulse-dot 1.4s ease infinite;
+}
+
+/* Refresh spinner */
+.refresh-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+.spinning { animation: spin 0.6s linear; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── FOOTER ── */
+footer {
+  text-align: center;
+  padding: 2rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  margin-top: 1.5rem;
+}
+footer strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav>
+  <div class="logo">VenueFlow <span>/ STADIUM OS</span></div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab-btn" onclick="switchTab('gates', this)">Gate Control</button>
+    <button class="tab-btn" onclick="switchTab('navigate', this)">Navigate</button>
+    <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
+  </div>
+  <div class="nav-right">
+    <span class="venue-name"><strong>Chinnaswamy Stadium</strong> · IPL 2026</span>
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+  </div>
+</nav>
+
+<!-- ALERT TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-inner" id="tickerInner"></div>
+</div>
+
+<!-- EMERGENCY BANNER -->
+<div class="emergency-banner" id="emergencyBanner">
+  <span style="font-size:1.5rem">🚨</span>
+  <div>
+    <div class="emergency-title">ATTENTION — GATE C OVERCROWDED</div>
+    <div class="emergency-msg">Redirecting incoming crowd to Gate A and Gate E. Follow steward instructions.</div>
+  </div>
+  <button class="emergency-close" onclick="document.getElementById('emergencyBanner').classList.remove('show')">✕</button>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-layout" id="mainLayout">
+
+  <!-- STAT STRIP -->
+  <div class="stat-strip">
+    <div class="stat-card">
+      <div class="stat-label">Total Attendance</div>
+      <div class="stat-value" style="color:#00e5ff" id="statAttend">34,218</div>
+      <div class="stat-sub"><span class="stat-trend trend-up">↑ 1,204/hr</span> <span>influx rate</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:76%;background:linear-gradient(90deg,#00e5ff,#a259ff)"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Capacity Used</div>
+      <div class="stat-value" style="color:#a259ff" id="statCap">76%</div>
+      <div class="stat-sub"><span>of</span><span class="stat-trend trend-flat">&nbsp;45,000 seats</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:76%;background:linear-gradient(90deg,#a259ff,#ff3d71)"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Gate Wait</div>
+      <div class="stat-value" style="color:#ffaa00" id="statWait">4.2<span style="font-size:1.1rem;color:var(--muted)">min</span></div>
+      <div class="stat-sub"><span class="stat-trend trend-down">↓ 1.8 min</span><span>&nbsp;from peak</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:42%;background:linear-gradient(90deg,#00e096,#ffaa00)"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Incidents</div>
+      <div class="stat-value" style="color:#ff3d71" id="statInc">2</div>
+      <div class="stat-sub"><span class="stat-trend trend-flat">⚠ </span><span>minor crowd surges</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:20%;background:var(--accent2)"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Stewards Online</div>
+      <div class="stat-value" style="color:#00e096" id="statStew">142</div>
+      <div class="stat-sub"><span class="stat-trend trend-down">✓ </span><span>all stations covered</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:95%;background:var(--green)"></div></div>
+    </div>
+  </div>
+
+  <!-- VENUE MAP -->
+  <div class="map-panel">
+    <div class="section-header">
+      <span class="section-title">CROWD DENSITY MAP</span>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <button class="refresh-btn" onclick="refreshMap(this)">↻ Refresh</button>
+        <span class="section-tag">Live · 5s update</span>
+      </div>
+    </div>
+    <div class="venue-canvas">
+      <canvas id="venueMap"></canvas>
+    </div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#00e096"></div>Clear</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffaa00"></div>Moderate</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff7a00"></div>Busy</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff3d71"></div>Congested</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a259ff"></div>Critical</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <!-- GATES -->
+    <div class="panel">
+      <div class="section-header">
+        <span class="section-title">GATE STATUS</span>
+        <span class="section-tag">6 active</span>
+      </div>
+      <div class="gate-grid" id="gateGrid"></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="panel">
+      <div class="section-header">
+        <span class="section-title">LIVE ALERTS</span>
+        <button class="refresh-btn" onclick="generateAlerts()">Clear all</button>
+      </div>
+      <div class="alerts-list" id="alertsList"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="bottom-row">
+
+    <!-- CONCESSION QUEUES -->
+    <div class="panel">
+      <div class="section-header">
+        <span class="section-title">FOOD &amp; SERVICES</span>
+        <span class="section-tag">Queue times</span>
+      </div>
+      <div class="concession-list" id="concessionList"></div>
+    </div>
+
+    <!-- CROWD FLOW CHART -->
+    <div class="panel">
+      <div class="section-header">
+        <span class="section-title">CROWD FLOW</span>
+        <span class="section-tag">Last 2 hours</span>
+      </div>
+      <canvas id="flowChart"></canvas>
+    </div>
+
+    <!-- NAVIGATION ASSISTANT -->
+    <div class="panel">
+      <div class="section-header">
+        <span class="section-title">SMART NAVIGATION</span>
+        <span class="section-tag">AI-Assisted</span>
+      </div>
+      <div class="nav-assistant">
+        <div class="nav-input-row">
+          <input class="nav-input" id="navFrom" placeholder="Your seat (e.g. D-114)" />
+          <input class="nav-input" id="navTo" placeholder="Destination" />
+          <button class="nav-go-btn" onclick="findRoute()">Go</button>
+        </div>
+        <div class="nav-result" id="navResult">
+          <div style="color:var(--muted);font-size:0.75rem">Enter your seat number and destination to get a crowd-aware route. Try: <strong style="color:var(--accent)">D-114</strong> → <strong style="color:var(--accent)">Gate B</strong></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tooltip-box" id="tooltipBox">
+  <div class="tooltip-name" id="ttName">Section A1</div>
+  <div class="tooltip-row"><span>Density</span><span class="tooltip-val" id="ttDensity">72%</span></div>
+  <div class="tooltip-row"><span>Crowd</span><span class="tooltip-val" id="ttCrowd">1,204 people</span></div>
+  <div class="tooltip-row"><span>Status</span><span class="tooltip-val" id="ttStatus">Busy</span></div>
+</div>
+
+<footer>
+  <strong>VenueFlow</strong> — Real-Time Smart Venue Experience Platform &nbsp;·&nbsp;
+  Built for <strong>Google Antigravity Hackathon 2026</strong> &nbsp;·&nbsp;
+  Powered by live sensor simulation &amp; AI-assisted routing
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DATA MODEL
+// ═══════════════════════════════════════════════
+const GATES = [
+  { id:'A', name:'Gate A — North', icon:'🚪', lanes:4, capacity:80 },
+  { id:'B', name:'Gate B — Main', icon:'🏟️', lanes:6, capacity:100 },
+  { id:'C', name:'Gate C — East', icon:'🚪', lanes:3, capacity:60 },
+  { id:'D', name:'Gate D — South', icon:'🚪', lanes:4, capacity:70 },
+  { id:'E', name:'Gate E — VIP', icon:'⭐', lanes:2, capacity:40 },
+  { id:'F', name:'Gate F — Press', icon:'📷', lanes:2, capacity:30 },
+];
+
+const CONCESSIONS = [
+  { name:'Food Court North', emoji:'🍔', zone:'N' },
+  { name:'Beverages East', emoji:'🥤', zone:'E' },
+  { name:'Snack Bar South', emoji:'🍿', zone:'S' },
+  { name:'Restrooms West', emoji:'🚻', zone:'W' },
+  { name:'First Aid', emoji:'🏥', zone:'C' },
+  { name:'Merchandise', emoji:'👕', zone:'NW' },
+];
+
+const ALERT_TEMPLATES = [
+  { type:'danger', icon:'🚨', title:'Gate C overcrowded', msg:'Density at 92%. Redirect visitors to Gate A or Gate E.' },
+  { type:'warn', icon:'⚠️', title:'Section D — Surge detected', msg:'Crowd density increased 18% in last 5 minutes.' },
+  { type:'info', icon:'ℹ️', title:'Match break in 8 minutes', msg:'Expect concession rush. All staff to food court stations.' },
+  { type:'success', icon:'✅', title:'Gate B wait time reduced', msg:'Average wait dropped from 9 min to 3 min after lane expansion.' },
+  { type:'warn', icon:'🌧️', title:'Weather alert', msg:'Light drizzle expected at 20:30. Covered exits open.' },
+  { type:'info', icon:'🅿️', title:'Parking Lot C cleared', msg:'300 new spaces available. Shuttle active from West Entrance.' },
+  { type:'success', icon:'✅', title:'Medical team deployed', msg:'First aid station A restaffed. Response time < 3 min.' },
+  { type:'danger', icon:'🔥', title:'Food court rush — Section B', msg:'Queue length 22 min. Activate mobile kiosks.' },
+];
+
+const TICKER_ITEMS = [
+  { text:'Gate A: 2 min wait', tag:'OK' },
+  { text:'Gate B: 3 min wait', tag:'OK' },
+  { text:'Gate C: 11 min wait — CONGESTED', tag:'ALERT' },
+  { text:'Gate D: 5 min wait', tag:'WARN' },
+  { text:'Gate E: 1 min wait (VIP)', tag:'OK' },
+  { text:'North Stand: 74% capacity', tag:'OK' },
+  { text:'East Stand: 91% capacity — NEAR FULL', tag:'ALERT' },
+  { text:'South Stand: 61% capacity', tag:'OK' },
+  { text:'Food Court North: 18 min wait', tag:'WARN' },
+  { text:'First Aid: All clear', tag:'OK' },
+  { text:'Parking A-B-C: Full', tag:'ALERT' },
+  { text:'Parking D-E: 40% available', tag:'WARN' },
+  { text:'Restrooms West: Available', tag:'OK' },
+  { text:'Next gate security review: 19:45 IST', tag:'OK' },
+];
+
+// Section data for heatmap
+const SECTIONS = [
+  { id:'North Upper', x:0.2, y:0.05, w:0.6, h:0.12 },
+  { id:'North Lower', x:0.25, y:0.17, w:0.5, h:0.1 },
+  { id:'South Upper', x:0.2, y:0.78, w:0.6, h:0.12 },
+  { id:'South Lower', x:0.25, y:0.68, w:0.5, h:0.1 },
+  { id:'East Upper',  x:0.77, y:0.2, w:0.16, h:0.55 },
+  { id:'East Lower',  x:0.64, y:0.25, w:0.12, h:0.45 },
+  { id:'West Upper',  x:0.07, y:0.2, w:0.16, h:0.55 },
+  { id:'West Lower',  x:0.24, y:0.25, w:0.12, h:0.45 },
+  { id:'NE Corner',   x:0.65, y:0.1, w:0.18, h:0.18 },
+  { id:'NW Corner',   x:0.17, y:0.1, w:0.18, h:0.18 },
+  { id:'SE Corner',   x:0.65, y:0.72, w:0.18, h:0.18 },
+  { id:'SW Corner',   x:0.17, y:0.72, w:0.18, h:0.18 },
+];
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let sectionDensities = {};
+let gateWaits = {};
+let concessionWaits = {};
+let flowData = [];
+let currentTab = 'overview';
+
+function rnd(min, max) { return Math.random() * (max - min) + min; }
+function rndInt(min, max) { return Math.floor(rnd(min, max)); }
+
+function initState() {
+  SECTIONS.forEach(s => { sectionDensities[s.id] = rnd(0.3, 0.95); });
+  sectionDensities['East Upper'] = rnd(0.85, 0.98);
+  sectionDensities['East Lower'] = rnd(0.80, 0.95);
+  sectionDensities['Gate C region'] = 0.93;
+
+  GATES.forEach(g => {
+    gateWaits[g.id] = g.id === 'C' ? rndInt(9, 13) : rndInt(1, 7);
+  });
+
+  CONCESSIONS.forEach(c => {
+    concessionWaits[c.name] = rndInt(3, 22);
+  });
+
+  // Flow data: last 24 entries = last 2 hrs (5 min each)
+  for (let i = 0; i < 24; i++) {
+    const base = 500 + Math.sin(i * 0.4) * 300 + rnd(-80, 80);
+    flowData.push(Math.max(50, base));
+  }
+}
+
+function updateState() {
+  SECTIONS.forEach(s => {
+    sectionDensities[s.id] = Math.max(0.05, Math.min(1, sectionDensities[s.id] + rnd(-0.04, 0.04)));
+  });
+  GATES.forEach(g => {
+    const delta = rndInt(-2, 2);
+    gateWaits[g.id] = Math.max(1, Math.min(20, gateWaits[g.id] + delta));
+  });
+  CONCESSIONS.forEach(c => {
+    concessionWaits[c.name] = Math.max(1, Math.min(30, concessionWaits[c.name] + rndInt(-3, 3)));
+  });
+  flowData.shift();
+  flowData.push(Math.max(50, flowData[flowData.length - 1] + rnd(-150, 150)));
+
+  const avg = Object.values(gateWaits).reduce((a, b) => a + b, 0) / GATES.length;
+  document.getElementById('statWait').innerHTML = avg.toFixed(1) + '<span style="font-size:1.1rem;color:var(--muted)">min</span>';
+
+  const totalAttend = rndInt(33800, 34600);
+  document.getElementById('statAttend').textContent = totalAttend.toLocaleString();
+  document.getElementById('statCap').textContent = Math.round(totalAttend / 450) + '%';
+}
+
+// ═══════════════════════════════════════════════
+//  TICKER
+// ═══════════════════════════════════════════════
+function buildTicker() {
+  const container = document.getElementById('tickerInner');
+  const doubled = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  container.innerHTML = doubled.map(item => {
+    const cls = item.tag === 'OK' ? 'tag-ok' : item.tag === 'WARN' ? 'tag-warn' : 'tag-alert';
+    return `<span class="ticker-item"><span class="tag ${cls}">${item.tag}</span>${item.text}</span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  GATE GRID
+// ═══════════════════════════════════════════════
+function renderGates() {
+  const container = document.getElementById('gateGrid');
+  container.innerHTML = GATES.map(g => {
+    const wait = gateWaits[g.id];
+    const pct = Math.min(100, (wait / 15) * 100);
+    const isAlert = wait >= 8;
+    const color = wait < 4 ? 'var(--green)' : wait < 8 ? 'var(--amber)' : 'var(--accent2)';
+    const bgColor = wait < 4 ? 'rgba(0,224,150,0.12)' : wait < 8 ? 'rgba(255,170,0,0.12)' : 'rgba(255,61,113,0.12)';
+    return `
+      <div class="gate-row ${isAlert ? 'alert-gate' : ''}">
+        <div class="gate-icon" style="background:${bgColor}">${g.icon}</div>
+        <div class="gate-info">
+          <div class="gate-name">${g.name}</div>
+          <div class="gate-detail">${g.lanes} lanes · cap ${g.capacity}/min</div>
+          <div class="status-bar"><div class="status-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>
+        <div class="gate-wait">
+          <div class="wait-time" style="color:${color}">${wait}m</div>
+          <div class="wait-label">wait</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  ALERTS
+// ═══════════════════════════════════════════════
+function generateAlerts() {
+  const container = document.getElementById('alertsList');
+  const shuffled = [...ALERT_TEMPLATES].sort(() => Math.random() - 0.5).slice(0, 5);
+  const now = new Date();
+  container.innerHTML = shuffled.map((a, i) => {
+    const t = new Date(now - i * 4 * 60000);
+    const timeStr = t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0');
+    return `
+      <div class="alert-item ${a.type}">
+        <div class="alert-icon">${a.icon}</div>
+        <div class="alert-body">
+          <div class="alert-title">${a.title}</div>
+          <div class="alert-msg">${a.msg}</div>
+        </div>
+        <div class="alert-time">${timeStr}</div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  CONCESSIONS
+// ═══════════════════════════════════════════════
+function renderConcessions() {
+  const container = document.getElementById('concessionList');
+  container.innerHTML = CONCESSIONS.map(c => {
+    const wait = concessionWaits[c.name];
+    const pct = Math.min(100, (wait / 30) * 100);
+    const color = wait < 8 ? 'var(--green)' : wait < 15 ? 'var(--amber)' : 'var(--accent2)';
+    return `
+      <div class="concession-row">
+        <div class="concession-info" style="font-size:1.1rem">${c.emoji}</div>
+        <div class="concession-info">
+          <div class="concession-name">${c.name}</div>
+        </div>
+        <div class="concession-bar-wrap">
+          <div class="concession-bar">
+            <div class="concession-fill" style="width:${pct}%;background:${color}"></div>
+          </div>
+          <div class="concession-wait" style="color:${color}">${wait}m</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  CROWD FLOW CHART
+// ═══════════════════════════════════════════════
+function drawFlowChart() {
+  const canvas = document.getElementById('flowChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth; const H = canvas.offsetHeight;
+  canvas.width = W; canvas.height = H;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 30, r: 10, t: 10, b: 25 };
+  const chartW = W - pad.l - pad.r;
+  const chartH = H - pad.t - pad.b;
+
+  const maxVal = Math.max(...flowData) * 1.15;
+  const minVal = 0;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (chartH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const val = Math.round(maxVal - (maxVal * i / 4));
+    ctx.fillStyle = 'rgba(90,106,126,0.8)';
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val, pad.l - 4, y + 3);
+  }
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + chartH);
+  grad.addColorStop(0, 'rgba(0,229,255,0.3)');
+  grad.addColorStop(1, 'rgba(0,229,255,0)');
+
+  const pts = flowData.map((v, i) => ({
+    x: pad.l + (i / (flowData.length - 1)) * chartW,
+    y: pad.t + chartH - ((v - minVal) / (maxVal - minVal)) * chartH
+  }));
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const cpx = (pts[i - 1].x + pts[i].x) / 2;
+    ctx.bezierCurveTo(cpx, pts[i-1].y, cpx, pts[i].y, pts[i].x, pts[i].y);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pad.t + chartH);
+  ctx.lineTo(pts[0].x, pad.t + chartH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const cpx = (pts[i - 1].x + pts[i].x) / 2;
+    ctx.bezierCurveTo(cpx, pts[i-1].y, cpx, pts[i].y, pts[i].x, pts[i].y);
+  }
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dot at latest
+  const last = pts[pts.length - 1];
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#00e5ff';
+  ctx.fill();
+
+  // X axis labels
+  ctx.fillStyle = 'rgba(90,106,126,0.8)';
+  ctx.font = '9px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  const now = new Date();
+  [-120, -90, -60, -30, 0].forEach(offset => {
+    const t = new Date(now.getTime() + offset * 60000);
+    const label = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+    const idx = Math.round(((offset + 120) / 120) * (flowData.length - 1));
+    const x = pad.l + (Math.max(0, Math.min(flowData.length-1, idx)) / (flowData.length - 1)) * chartW;
+    ctx.fillText(label, x, H - 8);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  VENUE HEATMAP CANVAS
+// ═══════════════════════════════════════════════
+let tooltip = document.getElementById('tooltipBox');
+let hoveredSection = null;
+
+function densityColor(d) {
+  if (d < 0.4) return { r:0, g:224, b:150 };
+  if (d < 0.6) return { r:255, g:170, b:0 };
+  if (d < 0.8) return { r:255, g:120, b:0 };
+  if (d < 0.92) return { r:255, g:61, b:113 };
+  return { r:162, g:89, b:255 };
+}
+
+function drawVenueMap() {
+  const canvas = document.getElementById('venueMap');
+  if (!canvas) return;
+  const W = canvas.offsetWidth || 600;
+  const H = canvas.offsetHeight || 400;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grass
+  const bgGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.45);
+  bgGrad.addColorStop(0, '#0d2a1a');
+  bgGrad.addColorStop(1, '#091422');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Field (ellipse)
+  const cx = W * 0.5, cy = H * 0.5;
+  const rx = W * 0.25, ry = H * 0.25;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#134a2a';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Field markings
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(cx, cy, rx * 0.4, ry * 0.4, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - rx, cy); ctx.lineTo(cx + rx, cy); ctx.stroke();
+
+  // Pitch label
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = `bold ${Math.round(W * 0.025)}px Bebas Neue, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('PITCH', cx, cy + 5);
+
+  // Sections
+  SECTIONS.forEach(s => {
+    const d = sectionDensities[s.id] || 0.5;
+    const c = densityColor(d);
+    const sx = s.x * W, sy = s.y * H, sw = s.w * W, sh = s.h * H;
+
+    ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${0.25 + d * 0.35})`;
+    roundRect(ctx, sx, sy, sw, sh, 6);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},${0.4 + d * 0.3})`;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, sx, sy, sw, sh, 6);
+    ctx.stroke();
+
+    // Section label
+    ctx.fillStyle = `rgba(255,255,255,${0.5 + d * 0.35})`;
+    ctx.font = `${Math.round(W * 0.018)}px DM Sans, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(s.id, sx + sw / 2, sy + sh / 2 + 4);
+
+    // Density %
+    ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},0.9)`;
+    ctx.font = `bold ${Math.round(W * 0.016)}px JetBrains Mono, monospace`;
+    ctx.fillText(Math.round(d * 100) + '%', sx + sw / 2, sy + sh / 2 + 16);
+  });
+
+  // Gate markers
+  const gatePositions = [
+    { id:'A', x:0.5, y:0.0,  label:'A' },
+    { id:'B', x:1.0, y:0.5,  label:'B' },
+    { id:'C', x:0.5, y:1.0,  label:'C' },
+    { id:'D', x:0.0, y:0.5,  label:'D' },
+    { id:'E', x:0.85, y:0.0, label:'E' },
+    { id:'F', x:0.15, y:0.0, label:'F' },
+  ];
+
+  gatePositions.forEach(g => {
+    const gx = g.x * W * 0.94 + W * 0.03;
+    const gy = g.y * H * 0.92 + H * 0.04;
+    const wait = gateWaits[g.id] || 3;
+    const gc = wait < 4 ? '#00e096' : wait < 8 ? '#ffaa00' : '#ff3d71';
+
+    ctx.beginPath();
+    ctx.arc(gx, gy, 10, 0, Math.PI * 2);
+    ctx.fillStyle = gc;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#07101c';
+    ctx.font = `bold ${Math.round(W * 0.022)}px Bebas Neue, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(g.label, gx, gy + 4);
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Canvas hover
+document.getElementById('venueMap').addEventListener('mousemove', (e) => {
+  const canvas = e.target;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) / rect.width;
+  const my = (e.clientY - rect.top) / rect.height;
+
+  let hit = null;
+  SECTIONS.forEach(s => {
+    if (mx >= s.x && mx <= s.x + s.w && my >= s.y && my <= s.y + s.h) hit = s;
+  });
+
+  if (hit) {
+    const d = sectionDensities[hit.id] || 0.5;
+    document.getElementById('ttName').textContent = hit.id;
+    document.getElementById('ttDensity').textContent = Math.round(d * 100) + '%';
+    document.getElementById('ttCrowd').textContent = Math.round(d * 4000).toLocaleString() + ' people';
+    document.getElementById('ttStatus').textContent = d < 0.4 ? 'Clear' : d < 0.6 ? 'Moderate' : d < 0.8 ? 'Busy' : d < 0.92 ? 'Congested' : 'Critical';
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top = (e.clientY - 40) + 'px';
+    tooltip.style.display = 'block';
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+document.getElementById('venueMap').addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+});
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION ASSISTANT
+// ═══════════════════════════════════════════════
+const DESTINATIONS = {
+  'gate a': { steps: ['Head down Aisle 12', 'Turn right at Section C stairwell', 'Follow North concourse to Gate A', 'Est. 4 min walk'], crowd: 'Low crowd on route' },
+  'gate b': { steps: ['Exit via Aisle 8 (East)', 'Follow concourse B signs', 'Pass Beverages East kiosk', 'Gate B on your left'], crowd: 'Moderate crowd' },
+  'gate c': { steps: ['⚠️ Gate C is congested (11 min wait)', 'Recommend Gate D instead', 'Take south stairwell to concourse', 'Est. 6 min walk via Gate D'], crowd: 'High crowd — alternate suggested' },
+  'food court': { steps: ['Exit row via Aisle 5', 'Head to North concourse', 'Food Court North is at Section A junction', 'Est. 2 min walk · Queue: 18 min'], crowd: 'Busy' },
+  'restroom': { steps: ['Nearest: Aisle 14 (50m)', 'West restrooms less crowded', 'West restroom queue: ~3 min', 'Open from Gate D side'], crowd: 'Low' },
+  'first aid': { steps: ['Emergency: Call steward or dial 100', 'First Aid at Section C ground level', 'Follow green cross signs', 'Est. 3 min'], crowd: 'Priority route — always open' },
+  'merchandise': { steps: ['Merchandise at North-West concourse', 'Exit via Aisle 2', 'Follow blue signage', 'Est. 5 min · Queue: ~10 min'], crowd: 'Moderate' },
+};
+
+function findRoute() {
+  const from = document.getElementById('navFrom').value.trim();
+  const to = document.getElementById('navTo').value.trim().toLowerCase();
+  const container = document.getElementById('navResult');
+
+  if (!from) { container.innerHTML = '<div style="color:var(--accent2);font-size:0.75rem">⚠️ Please enter your seat number.</div>'; return; }
+  if (!to) { container.innerHTML = '<div style="color:var(--accent2);font-size:0.75rem">⚠️ Please enter a destination.</div>'; return; }
+
+  const key = Object.keys(DESTINATIONS).find(k => to.includes(k));
+  const route = key ? DESTINATIONS[key] : null;
+
+  if (route) {
+    container.innerHTML = `
+      <div style="font-size:0.7rem;color:var(--accent);font-weight:600;margin-bottom:0.5rem;letter-spacing:1px">
+        📍 ${from.toUpperCase()} → ${to.toUpperCase()}
+        <span style="margin-left:0.75rem;color:var(--muted);font-weight:400">${route.crowd}</span>
+      </div>
+      ${route.steps.map((step, i) => `
+        <div class="route-step">
+          <div class="step-num">${i + 1}</div>
+          <span>${step}</span>
+        </div>
+      `).join('')}`;
+  } else {
+    container.innerHTML = `
+      <div style="font-size:0.75rem;color:var(--muted)">
+        Route from <strong style="color:var(--text)">${from}</strong> to <strong style="color:var(--text)">${to}</strong>: 
+        Follow nearest concourse signs or ask a steward.<br><br>
+        <em style="font-size:0.7rem">Try destinations: Gate A/B/C/D, Food Court, Restroom, First Aid, Merchandise</em>
+      </div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = tab;
+  // Tab changes could show different panels — currently all panels visible in demo
+}
+
+function refreshMap(btn) {
+  btn.classList.add('spinning');
+  updateState();
+  renderAll();
+  setTimeout(() => btn.classList.remove('spinning'), 600);
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER ALL
+// ═══════════════════════════════════════════════
+function renderAll() {
+  drawVenueMap();
+  renderGates();
+  renderConcessions();
+  drawFlowChart();
+}
+
+// ═══════════════════════════════════════════════
+//  INIT + LOOP
+// ═══════════════════════════════════════════════
+window.addEventListener('load', () => {
+  initState();
+  buildTicker();
+  generateAlerts();
+  renderAll();
+
+  // Show emergency banner after 3s for demo effect
+  setTimeout(() => {
+    document.getElementById('emergencyBanner').classList.add('show');
+  }, 3000);
+
+  // Auto-update every 5 seconds
+  setInterval(() => {
+    updateState();
+    renderAll();
+    // Occasionally refresh alerts
+    if (Math.random() < 0.15) generateAlerts();
+  }, 5000);
+});
+
+window.addEventListener('resize', renderAll);
+
+// Enter key for navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const from = document.getElementById('navFrom');
+    const to = document.getElementById('navTo');
+    if (document.activeElement === from || document.activeElement === to) findRoute();
+  }
+});
+</script>
+</body>
+</html>
