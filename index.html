@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="VenueFlow — Real-time smart venue experience platform for large-scale sporting events. Live crowd management, gate coordination, and AI-assisted navigation.">
+<meta name="theme-color" content="#060b13">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://maps.googleapis.com https://maps.gstatic.com; script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://maps.googleapis.com https://maps.gstatic.com; connect-src 'self';">
+<title>VenueFlow — Smart Venue Experience Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Google Maps JavaScript API with Visualization + Places libraries -->
+<script>
+  window.GOOGLE_MAPS_LOADED = false;
+  window.initGoogleMap = function() { window.GOOGLE_MAPS_LOADED = true; VenueFlow.maps.init(); };
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD_REPLACE_WITH_YOUR_KEY&libraries=visualization,places&callback=initGoogleMap"
+  onerror="VenueFlow && VenueFlow.maps && VenueFlow.maps.fallback()">
+</script>
+<style>
+/* ════════════════════════════════════════════════
+   DESIGN TOKENS & RESET
+════════════════════════════════════════════════ */
+:root {
+  --bg:        #060b13;
+  --bg2:       #0a1220;
+  --card:      #0d1928;
+  --card2:     #101e30;
+  --border:    rgba(255,255,255,0.06);
+  --border2:   rgba(255,255,255,0.11);
+  --cyan:      #00d4f0;
+  --cyan-dim:  rgba(0,212,240,0.12);
+  --red:       #f04060;
+  --red-dim:   rgba(240,64,96,0.12);
+  --amber:     #f0a020;
+  --amber-dim: rgba(240,160,32,0.12);
+  --green:     #10d080;
+  --green-dim: rgba(16,208,128,0.12);
+  --purple:    #9060f0;
+  --purple-dim:rgba(144,96,240,0.12);
+  --text:      #d8e8f4;
+  --text2:     #7a92a8;
+  --text3:     #3a5268;
+  --f-display: 'Syne', sans-serif;
+  --f-body:    'Outfit', sans-serif;
+  --f-mono:    'IBM Plex Mono', monospace;
+  --r:         10px;
+  --r2:        14px;
+  --shadow:    0 4px 24px rgba(0,0,0,0.4);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* ── Accessibility ── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; top: -100%; left: 1rem; z-index: 9999;
+  background: var(--cyan); color: var(--bg); font-weight: 700;
+  padding: .5rem 1.2rem; border-radius: 0 0 8px 8px;
+  text-decoration: none; font-size: .85rem; transition: top .15s;
+}
+.skip-link:focus { top: 0; }
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #1e3448; border-radius: 3px; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 300;
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 0 1.5rem;
+  height: 56px;
+  background: rgba(6,11,19,.97);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-family: var(--f-display);
+  font-size: 1.5rem; font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(110deg, var(--cyan), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex-shrink: 0;
+}
+
+.nav-tabs {
+  display: flex; gap: 2px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px;
+  flex: 1;
+}
+
+.nav-tab {
+  flex: 1; padding: .35rem .9rem;
+  border: none; border-radius: 6px;
+  background: transparent; color: var(--text2);
+  font-family: var(--f-body); font-size: .8rem; font-weight: 500;
+  cursor: pointer; transition: all .18s; white-space: nowrap;
+  position: relative;
+}
+.nav-tab:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.nav-tab.active {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  box-shadow: inset 0 0 0 1px rgba(0,212,240,.2);
+}
+.nav-tab .badge {
+  position: absolute; top: 2px; right: 4px;
+  background: var(--red); color: #fff;
+  font-size: .5rem; font-weight: 700;
+  padding: 1px 4px; border-radius: 10px;
+  min-width: 14px; text-align: center;
+}
+
+.nav-right {
+  display: flex; align-items: center; gap: .75rem;
+  flex-shrink: 0;
+}
+
+.venue-label {
+  font-size: .75rem; color: var(--text2);
+  border-left: 1px solid var(--border); padding-left: .75rem;
+}
+.venue-label strong { color: var(--text); font-weight: 600; }
+
+.live-chip {
+  display: flex; align-items: center; gap: .4rem;
+  font-family: var(--f-mono); font-size: .65rem; font-weight: 600;
+  letter-spacing: .5px;
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(16,208,128,.2);
+  padding: .25rem .65rem; border-radius: 20px;
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── TICKER ── */
+.ticker {
+  background: rgba(0,212,240,.03);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden; height: 30px;
+  display: flex; align-items: center;
+}
+.ticker-track {
+  display: flex; gap: 2.5rem;
+  animation: scroll-ticker 40s linear infinite;
+  white-space: nowrap; width: max-content;
+}
+.ticker-track:hover { animation-play-state: paused; }
+@keyframes scroll-ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.ticker-item { display:flex; align-items:center; gap:.4rem; font-family:var(--f-mono); font-size:.68rem; color:var(--text2); }
+.chip {
+  padding: 1px 5px; border-radius: 3px;
+  font-size: .58rem; font-weight: 600; letter-spacing: .5px;
+}
+.chip-ok   { background:var(--green-dim); color:var(--green); }
+.chip-warn { background:var(--amber-dim); color:var(--amber); }
+.chip-bad  { background:var(--red-dim);   color:var(--red);   }
+
+/* ── TABS WRAPPER ── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ════════════════════════════════════════════════
+   TAB 1: OVERVIEW
+════════════════════════════════════════════════ */
+.overview-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: auto auto 1fr;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  max-width: 1380px;
+  margin: 0 auto;
+}
+
+/* Stat Strip */
+.stat-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.02) 0%, transparent 70%);
+  pointer-events: none;
+}
+.stat-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+.stat-card:focus { border-color: var(--cyan); }
+
+.stat-label {
+  font-size: .65rem; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text2); margin-bottom: .4rem;
+}
+.stat-num {
+  font-family: var(--f-display);
+  font-size: 2.2rem; font-weight: 700; line-height: 1;
+  margin-bottom: .25rem;
+}
+.stat-sub {
+  font-size: .7rem; color: var(--text2);
+  display: flex; align-items: center; gap: .3rem;
+}
+.up   { color: var(--red); }
+.down { color: var(--green); }
+.flat { color: var(--amber); }
+.stat-bar {
+  margin-top: .5rem; height: 2px;
+  background: rgba(255,255,255,.05); border-radius: 1px; overflow: hidden;
+}
+.stat-bar-fill { height: 100%; border-radius: 1px; transition: width 1.2s ease; }
+
+/* Map Panel */
+.map-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1rem;
+  grid-row: span 2;
+}
+
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: .85rem;
+}
+.panel-title {
+  font-family: var(--f-display);
+  font-size: 1rem; font-weight: 700; letter-spacing: .5px;
+}
+.panel-tag {
+  font-family: var(--f-mono); font-size: .6rem; color: var(--text2);
+  border: 1px solid var(--border); padding: .15rem .45rem; border-radius: 4px;
+}
+
+#googleMap, #canvasWrap {
+  width: 100%; height: 290px;
+  border-radius: 8px; overflow: hidden;
+  background: #07111e;
+  border: 1px solid var(--border);
+}
+#canvasWrap { display: none; }
+#venueCanvas { width: 100%; height: 100%; display: block; }
+
+.map-legend {
+  display: flex; gap: .75rem; margin-top: .6rem; flex-wrap: wrap;
+}
+.legend-item { display:flex; align-items:center; gap:.3rem; font-size:.67rem; color:var(--text2); }
+.legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Sidebar panels */
+.sidebar { display: flex; flex-direction: column; gap: .85rem; }
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1rem;
+}
+
+/* Gates List */
+.gate-list { display: flex; flex-direction: column; gap: .45rem; }
+.gate-item {
+  display: flex; align-items: center; gap: .65rem;
+  padding: .55rem .7rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,.02);
+  cursor: pointer;
+  transition: all .2s;
+}
+.gate-item:hover { background: rgba(255,255,255,.05); border-color: var(--border); }
+.gate-item.congested { border-color: rgba(240,64,96,.25); background: rgba(240,64,96,.04); }
+.gate-item.focus-ring:focus { border-color: var(--cyan); }
+
+.gate-icon-wrap {
+  width: 30px; height: 30px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; flex-shrink: 0;
+}
+.gate-info { flex: 1; min-width: 0; }
+.gate-name { font-size: .78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gate-meta { font-size: .65rem; color: var(--text2); }
+.gate-progress { height: 3px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; margin-top: .25rem; }
+.gate-bar { height: 100%; border-radius: 2px; transition: width 1s ease; }
+.gate-wait-badge {
+  font-family: var(--f-mono); font-size: .85rem; font-weight: 600;
+  flex-shrink: 0; text-align: right;
+}
+.gate-wait-label { font-size: .58rem; color: var(--text2); }
+
+/* Alerts */
+.alerts-list { display: flex; flex-direction: column; gap: .4rem; max-height: 230px; overflow-y: auto; }
+.alert-card {
+  display: flex; gap: .55rem; padding: .55rem .7rem;
+  border-radius: 8px; border-left: 3px solid;
+  background: rgba(255,255,255,.02);
+  animation: slideRight .3s ease;
+}
+@keyframes slideRight { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+.alert-card.danger  { border-color:var(--red);    background:rgba(240,64,96,.04); }
+.alert-card.warn    { border-color:var(--amber);  background:rgba(240,160,32,.04); }
+.alert-card.info    { border-color:var(--cyan);   background:rgba(0,212,240,.04); }
+.alert-card.success { border-color:var(--green);  background:rgba(16,208,128,.04); }
+.alert-icon { font-size: .9rem; flex-shrink: 0; margin-top: 1px; }
+.alert-body { flex: 1; }
+.alert-title { font-size: .74rem; font-weight: 600; }
+.alert-msg   { font-size: .65rem; color: var(--text2); margin-top: 1px; line-height: 1.35; }
+.alert-time  { font-family: var(--f-mono); font-size: .6rem; color: var(--text3); flex-shrink: 0; }
+
+/* Bottom Row */
+.overview-bottom {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Concessions */
+.conc-list { display: flex; flex-direction: column; gap: .4rem; }
+.conc-row { display: flex; align-items: center; gap: .6rem; }
+.conc-emoji { font-size: 1rem; flex-shrink: 0; }
+.conc-name  { font-size: .72rem; font-weight: 500; flex: 1; }
+.conc-bar-wrap { display: flex; align-items: center; gap: .4rem; flex: 1.2; }
+.conc-bar { flex: 1; height: 5px; background: rgba(255,255,255,.05); border-radius: 3px; overflow: hidden; }
+.conc-fill { height: 100%; border-radius: 3px; transition: width 1.5s ease; }
+.conc-time { font-family: var(--f-mono); font-size: .68rem; width: 28px; text-align: right; }
+
+/* Flow chart */
+#flowChart { width:100%; height:145px; display:block; }
+
+/* ════════════════════════════════════════════════
+   TAB 2: GATE CONTROL
+════════════════════════════════════════════════ */
+.gate-control-layout {
+  max-width: 1380px; margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1rem;
+}
+
+.gate-control-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .85rem;
+}
+
+.gate-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1.1rem;
+  transition: border-color .2s;
+}
+.gate-card.gate-open   { border-color: rgba(16,208,128,.25); }
+.gate-card.gate-congested { border-color: rgba(240,64,96,.35); }
+.gate-card.gate-closed { border-color: rgba(255,255,255,.05); opacity: .6; }
+
+.gate-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: .75rem;
+}
+.gate-card-name { font-family: var(--f-display); font-size: 1.1rem; font-weight: 700; }
+.gate-status-pill {
+  font-family: var(--f-mono); font-size: .6rem; font-weight: 600;
+  padding: .2rem .55rem; border-radius: 20px; letter-spacing: .5px;
+}
+.pill-open     { background:var(--green-dim); color:var(--green); }
+.pill-congested{ background:var(--red-dim);   color:var(--red);   }
+.pill-moderate { background:var(--amber-dim); color:var(--amber); }
+.pill-closed   { background:rgba(255,255,255,.06); color:var(--text2); }
+
+.gate-big-wait {
+  font-family: var(--f-display);
+  font-size: 3rem; font-weight: 700; line-height: 1;
+  margin-bottom: .15rem;
+}
+.gate-big-label { font-size: .7rem; color: var(--text2); margin-bottom: .85rem; }
+
+.gate-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; margin-bottom: .85rem; }
+.gate-meta-item { background: rgba(255,255,255,.03); border-radius: 6px; padding: .4rem .55rem; }
+.gate-meta-key   { font-size: .6rem; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+.gate-meta-value { font-family: var(--f-mono); font-size: .85rem; font-weight: 600; margin-top: 1px; }
+
+.gate-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.btn {
+  flex: 1; padding: .45rem .6rem;
+  border: 1px solid; border-radius: 7px;
+  font-family: var(--f-body); font-size: .72rem; font-weight: 600;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+  display: flex; align-items: center; justify-content: center; gap: .3rem;
+}
+.btn:active { transform: scale(.97); }
+.btn-close  { border-color:rgba(240,64,96,.4); color:var(--red); background:rgba(240,64,96,.06); }
+.btn-close:hover { background:rgba(240,64,96,.15); }
+.btn-open   { border-color:rgba(16,208,128,.4); color:var(--green); background:rgba(16,208,128,.06); }
+.btn-open:hover { background:rgba(16,208,128,.15); }
+.btn-divert { border-color:rgba(240,160,32,.4); color:var(--amber); background:rgba(240,160,32,.06); }
+.btn-divert:hover { background:rgba(240,160,32,.15); }
+.btn-lane+  { border-color:rgba(0,212,240,.4); color:var(--cyan); background:rgba(0,212,240,.06); }
+.btn-lane+:hover { background:rgba(0,212,240,.15); }
+.btn-primary {
+  background: var(--cyan); color: var(--bg);
+  border-color: var(--cyan); font-weight: 700;
+}
+.btn-primary:hover { opacity: .85; }
+.btn-secondary {
+  background: transparent; color: var(--text2);
+  border-color: var(--border);
+}
+.btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+
+.gate-log {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r2); padding: 1rem;
+}
+.gate-log-list { display:flex; flex-direction:column; gap:.35rem; max-height:400px; overflow-y:auto; }
+.log-entry {
+  display: flex; gap: .6rem; align-items: flex-start;
+  font-size: .7rem; padding: .3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.log-entry:last-child { border-bottom: none; }
+.log-time { font-family:var(--f-mono); color:var(--text3); flex-shrink:0; }
+.log-msg  { color: var(--text2); flex: 1; }
+.log-msg strong { color: var(--text); }
+
+/* Lane adjuster */
+.lane-adjuster {
+  display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem;
+}
+.lane-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 1px solid var(--border2); background: var(--card2);
+  color: var(--text); font-size: 1rem; line-height: 1;
+  cursor: pointer; display:flex; align-items:center; justify-content:center;
+  transition: all .15s;
+}
+.lane-btn:hover { border-color:var(--cyan); color:var(--cyan); }
+.lane-count { font-family:var(--f-mono); font-size:.9rem; font-weight:600; min-width:24px; text-align:center; }
+.lane-label { font-size:.68rem; color:var(--text2); }
+
+/* ════════════════════════════════════════════════
+   TAB 3: NAVIGATE
+════════════════════════════════════════════════ */
+.navigate-layout {
+  max-width: 1380px; margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1rem;
+}
+
+.nav-form-panel { display: flex; flex-direction: column; gap: .75rem; }
+
+.form-group { display: flex; flex-direction: column; gap: .3rem; }
+.form-label { font-size: .7rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+
+.form-input, .form-select {
+  width: 100%; padding: .6rem .85rem;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text); font-family: var(--f-body); font-size: .83rem;
+  outline: none; transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus { border-color: var(--cyan); }
+.form-input::placeholder { color: var(--text3); }
+.form-select option { background: var(--card2); }
+
+.route-result {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1rem; flex: 1;
+  min-height: 200px;
+}
+
+.route-steps { display: flex; flex-direction: column; gap: .55rem; margin-top: .75rem; }
+.route-step {
+  display: flex; gap: .65rem; align-items: flex-start;
+  animation: slideRight .25s ease both;
+}
+.route-step:nth-child(1) { animation-delay: .05s; }
+.route-step:nth-child(2) { animation-delay: .1s; }
+.route-step:nth-child(3) { animation-delay: .15s; }
+.route-step:nth-child(4) { animation-delay: .2s; }
+.route-step:nth-child(5) { animation-delay: .25s; }
+
+.step-circle {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--cyan); color: var(--bg);
+  font-size: .6rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.step-text { font-size: .78rem; line-height: 1.45; }
+.step-highlight { color: var(--cyan); font-weight: 600; }
+
+.route-summary {
+  display: flex; gap: .75rem; flex-wrap: wrap;
+  padding: .65rem .85rem;
+  background: var(--cyan-dim);
+  border: 1px solid rgba(0,212,240,.15);
+  border-radius: 8px;
+  margin-top: .65rem;
+}
+.route-summary-item { display: flex; align-items: center; gap: .35rem; font-size: .75rem; }
+.summary-icon { font-size: 1rem; }
+.summary-val { font-family: var(--f-mono); font-weight: 600; color: var(--cyan); }
+
+.crowd-warn {
+  padding: .5rem .75rem;
+  background: var(--red-dim);
+  border: 1px solid rgba(240,64,96,.25);
+  border-radius: 7px;
+  font-size: .73rem; color: var(--red);
+  display: flex; gap: .4rem; align-items: center;
+  margin-top: .5rem;
+}
+
+.map-nav-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1rem;
+  display: flex; flex-direction: column; gap: .75rem;
+}
+#navMapCanvas { width:100%; flex:1; border-radius:8px; background:#07111e; display:block; }
+
+/* Quick-dest chips */
+.quick-dests { display: flex; flex-wrap: wrap; gap: .35rem; }
+.dest-chip {
+  padding: .3rem .7rem;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text2); font-family: var(--f-body); font-size: .72rem;
+  cursor: pointer; transition: all .15s;
+}
+.dest-chip:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+
+/* ════════════════════════════════════════════════
+   TAB 4: ANALYTICS
+════════════════════════════════════════════════ */
+.analytics-layout {
+  max-width: 1380px; margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 1rem;
+}
+.analytics-full { grid-column: 1 / -1; }
+
+.chart-wrap { width:100%; height:180px; position:relative; }
+.chart-wrap canvas { width:100%!important; height:100%!important; display:block; }
+
+.kpi-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 1rem;
+  text-align: center;
+}
+.kpi-icon { font-size: 1.5rem; margin-bottom: .35rem; }
+.kpi-value { font-family: var(--f-display); font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.kpi-label { font-size: .68rem; color: var(--text2); margin-top: .25rem; }
+
+/* Section heatmap table */
+.heatmap-table { width: 100%; border-collapse: collapse; font-size: .73rem; }
+.heatmap-table th { font-size: .62rem; text-transform: uppercase; letter-spacing: .5px; color: var(--text2); padding: .4rem .6rem; text-align: left; border-bottom: 1px solid var(--border); }
+.heatmap-table td { padding: .45rem .6rem; border-bottom: 1px solid var(--border); }
+.heatmap-table tr:last-child td { border-bottom: none; }
+.heatmap-table tr:hover td { background: rgba(255,255,255,.02); }
+.density-pill {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-family: var(--f-mono); font-size: .65rem; font-weight: 600;
+}
+
+/* Time filter */
+.time-filter { display: flex; gap: .35rem; }
+.tf-btn {
+  padding: .25rem .6rem; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text2); font-size: .68rem; cursor: pointer; transition: all .15s;
+}
+.tf-btn.active { background: var(--cyan-dim); border-color: rgba(0,212,240,.3); color: var(--cyan); }
+.tf-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+/* ════════════════════════════════════════════════
+   EMERGENCY BANNER
+════════════════════════════════════════════════ */
+.emergency-bar {
+  display: none;
+  align-items: center; gap: 1rem;
+  padding: .65rem 1.5rem;
+  background: rgba(240,64,96,.1);
+  border-bottom: 1px solid rgba(240,64,96,.3);
+  animation: emergPulse 2.2s ease infinite;
+}
+.emergency-bar.show { display: flex; }
+@keyframes emergPulse { 0%,100%{background:rgba(240,64,96,.08)} 50%{background:rgba(240,64,96,.16)} }
+.emerg-title { font-family:var(--f-display); font-size:1rem; letter-spacing:.5px; color:var(--red); }
+.emerg-msg   { font-size:.76rem; color:var(--text2); flex:1; }
+.emerg-action { font-size:.72rem; padding:.3rem .75rem; border:1px solid rgba(240,64,96,.4); border-radius:6px; color:var(--red); background:none; cursor:pointer; transition:all .15s; }
+.emerg-action:hover { background:rgba(240,64,96,.15); }
+.emerg-close { background:none; border:none; color:var(--text2); cursor:pointer; font-size:1.1rem; padding:.2rem; line-height:1; }
+.emerg-close:hover { color:var(--text); }
+
+/* ════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+════════════════════════════════════════════════ */
+.toast-wrap {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  display: flex; flex-direction: column; gap: .5rem;
+  z-index: 999; pointer-events: none;
+}
+.toast {
+  background: var(--card2); border: 1px solid var(--border2);
+  border-radius: var(--r); padding: .65rem 1rem;
+  font-size: .78rem; display: flex; align-items: center; gap: .55rem;
+  box-shadow: var(--shadow);
+  animation: toastIn .3s ease;
+  pointer-events: auto; max-width: 300px;
+}
+@keyframes toastIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.toast.toast-success { border-left: 3px solid var(--green); }
+.toast.toast-warn    { border-left: 3px solid var(--amber); }
+.toast.toast-error   { border-left: 3px solid var(--red);   }
+.toast.toast-info    { border-left: 3px solid var(--cyan);  }
+.toast-out { animation: toastOut .3s ease forwards; }
+@keyframes toastOut { to{opacity:0;transform:translateY(-6px)} }
+
+/* ════════════════════════════════════════════════
+   TEST PANEL
+════════════════════════════════════════════════ */
+.test-panel {
+  display: none;
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,.85); backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+.test-panel.open { display: block; }
+.test-inner {
+  max-width: 860px; margin: 2rem auto;
+  background: var(--card2); border: 1px solid var(--border2);
+  border-radius: var(--r2); padding: 1.5rem;
+}
+.test-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.test-title { font-family: var(--f-display); font-size: 1.4rem; letter-spacing: .5px; }
+.test-close { background:none; border:none; color:var(--text2); cursor:pointer; font-size:1.5rem; line-height:1; }
+.test-summary { display:flex; gap:1.5rem; margin-bottom:1rem; font-size:.8rem; }
+.test-stat { display:flex; gap:.35rem; align-items:center; }
+.test-results { display:flex; flex-direction:column; gap:.3rem; max-height:520px; overflow-y:auto; }
+.test-row {
+  display: flex; align-items: flex-start; gap: .6rem;
+  font-size: .73rem; padding: .3rem .5rem;
+  border-radius: 5px;
+}
+.test-row.pass { background: rgba(16,208,128,.05); }
+.test-row.fail { background: rgba(240,64,96,.07); }
+.test-row .icon { font-size: .8rem; flex-shrink:0; margin-top:1px; }
+.test-name { color: var(--text2); flex: 1; }
+.test-err  { color: var(--red); font-family: var(--f-mono); font-size: .65rem; margin-top: 2px; }
+.test-group-header { font-size: .7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text3); margin-top:.65rem; margin-bottom:.2rem; padding: 0 .5rem; }
+.run-tests-btn {
+  padding: .5rem 1.2rem;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  color: var(--bg); border: none; border-radius: 8px;
+  font-family: var(--f-body); font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: opacity .2s;
+}
+.run-tests-btn:hover { opacity: .85; }
+
+/* ════════════════════════════════════════════════
+   MODAL
+════════════════════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card2); border: 1px solid var(--border2);
+  border-radius: var(--r2); padding: 1.5rem;
+  max-width: 420px; width: 90%;
+  box-shadow: var(--shadow);
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.modal-title { font-family:var(--f-display); font-size:1.1rem; }
+.modal-close { background:none; border:none; color:var(--text2); cursor:pointer; font-size:1.2rem; }
+.modal-body { display:flex; flex-direction:column; gap:.65rem; }
+
+/* Responsive */
+@media(max-width:1100px) {
+  .overview-layout { grid-template-columns:1fr; }
+  .stat-strip { grid-template-columns:repeat(3,1fr); }
+  .overview-bottom { grid-template-columns:1fr 1fr; }
+  .gate-control-layout { grid-template-columns:1fr; }
+  .navigate-layout { grid-template-columns:1fr; }
+  .analytics-layout { grid-template-columns:1fr; }
+  .kpi-row { grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:700px) {
+  .stat-strip { grid-template-columns:repeat(2,1fr); }
+  .overview-bottom { grid-template-columns:1fr; }
+  .gate-control-grid { grid-template-columns:1fr 1fr; }
+  .kpi-row { grid-template-columns:1fr 1fr; }
+  nav { padding:0 .75rem; }
+  .venue-label { display:none; }
+  .overview-layout { padding:.75rem; }
+}
+@media(prefers-contrast:high) { :root { --border:rgba(255,255,255,.2); --text2:#9bb0c4; } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+
+footer {
+  text-align:center; padding:1.5rem; font-size:.68rem; color:var(--text3);
+  border-top:1px solid var(--border); margin-top:1rem;
+}
+footer a { color:var(--cyan); text-decoration:none; }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<!-- NAV -->
+<nav role="navigation" aria-label="Main navigation">
+  <div class="nav-logo" aria-label="VenueFlow">VenueFlow</div>
+
+  <div class="nav-tabs" role="tablist" aria-label="Dashboard views">
+    <button class="nav-tab active" role="tab" aria-selected="true"  aria-controls="tab-overview"  id="tab-btn-overview"  onclick="switchTab('overview',this)">🏟 Overview</button>
+    <button class="nav-tab"        role="tab" aria-selected="false" aria-controls="tab-gates"     id="tab-btn-gates"     onclick="switchTab('gates',this)">🚪 Gate Control <span class="badge" id="alertBadge" aria-label="2 active alerts">2</span></button>
+    <button class="nav-tab"        role="tab" aria-selected="false" aria-controls="tab-navigate"  id="tab-btn-navigate"  onclick="switchTab('navigate',this)">🧭 Navigate</button>
+    <button class="nav-tab"        role="tab" aria-selected="false" aria-controls="tab-analytics" id="tab-btn-analytics" onclick="switchTab('analytics',this)">📊 Analytics</button>
+  </div>
+
+  <div class="nav-right">
+    <span class="venue-label"><strong>M. Chinnaswamy Stadium</strong> · IPL 2026</span>
+    <div class="live-chip" role="status" aria-live="polite" aria-atomic="true">
+      <div class="live-dot" aria-hidden="true"></div>
+      <span>LIVE</span>
+    </div>
+    <button class="btn btn-secondary" style="font-size:.68rem;padding:.25rem .6rem;flex:none;" onclick="openTestPanel()" aria-label="Open test panel" title="Run tests (Ctrl+T)">🧪 Tests</button>
+  </div>
+</nav>
+
+<!-- EMERGENCY BANNER -->
+<div class="emergency-bar" id="emergencyBar" role="alert" aria-live="assertive" aria-atomic="true">
+  <span aria-hidden="true" style="font-size:1.2rem">🚨</span>
+  <div>
+    <div class="emerg-title">GATE C OVERCROWDED</div>
+    <div class="emerg-msg" id="emergMsg">Crowd density critical at 94%. Redirect attendees to Gate A or Gate E immediately.</div>
+  </div>
+  <button class="emerg-action" onclick="divertGateC()" aria-label="Activate diversion for Gate C">Activate Diversion</button>
+  <button class="emerg-close" onclick="dismissEmergency()" aria-label="Dismiss emergency alert">✕</button>
+</div>
+
+<!-- TICKER -->
+<div class="ticker" aria-label="Live venue status updates" role="marquee" aria-live="off">
+  <div class="ticker-track" id="tickerTrack" aria-hidden="true"></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main id="main">
+
+<!-- ╔══════════════════════════════════╗
+     ║  TAB 1 — OVERVIEW              ║
+     ╚══════════════════════════════════╝ -->
+<div class="tab-panel active" id="tab-overview" role="tabpanel" aria-labelledby="tab-btn-overview">
+  <div class="overview-layout">
+
+    <!-- STAT STRIP -->
+    <section class="stat-strip" aria-label="Live stadium statistics">
+
+      <article class="stat-card" tabindex="0" aria-label="Total attendance: 34,218">
+        <div class="stat-label">Total Attendance</div>
+        <div class="stat-num" style="color:var(--cyan)" id="statAttend" aria-live="polite">34,218</div>
+        <div class="stat-sub"><span class="up">↑ 1,204</span>/hr influx</div>
+        <div class="stat-bar" role="progressbar" aria-valuenow="76" aria-valuemin="0" aria-valuemax="100" aria-label="76 percent of capacity">
+          <div class="stat-bar-fill" id="attendBar" style="width:76%;background:linear-gradient(90deg,var(--cyan),var(--purple))"></div>
+        </div>
+      </article>
+
+      <article class="stat-card" tabindex="0" aria-label="Capacity: 76 percent used">
+        <div class="stat-label">Capacity Used</div>
+        <div class="stat-num" style="color:var(--purple)" id="statCap" aria-live="polite">76%</div>
+        <div class="stat-sub">of <span class="flat">45,000</span> seats</div>
+        <div class="stat-bar" role="progressbar" aria-valuenow="76" aria-valuemin="0" aria-valuemax="100">
+          <div class="stat-bar-fill" style="width:76%;background:linear-gradient(90deg,var(--purple),var(--red))"></div>
+        </div>
+      </article>
+
+      <article class="stat-card" tabindex="0" aria-label="Average gate wait: 4.2 minutes">
+        <div class="stat-label">Avg Gate Wait</div>
+        <div class="stat-num" style="color:var(--amber)" id="statWait" aria-live="polite">4.2<span style="font-size:1rem;color:var(--text2)">m</span></div>
+        <div class="stat-sub"><span class="down">↓ 1.8m</span> from peak</div>
+        <div class="stat-bar" role="progressbar" aria-valuenow="28" aria-valuemin="0" aria-valuemax="100">
+          <div class="stat-bar-fill" style="width:28%;background:linear-gradient(90deg,var(--green),var(--amber))"></div>
+        </div>
+      </article>
+
+      <article class="stat-card" tabindex="0" aria-label="2 active incidents">
+        <div class="stat-label">Active Incidents</div>
+        <div class="stat-num" style="color:var(--red)" id="statInc" aria-live="assertive">2</div>
+        <div class="stat-sub"><span class="flat">⚠</span> crowd surges</div>
+        <div class="stat-bar" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100">
+          <div class="stat-bar-fill" style="width:20%;background:var(--red)"></div>
+        </div>
+      </article>
+
+      <article class="stat-card" tabindex="0" aria-label="142 stewards online">
+        <div class="stat-label">Stewards Online</div>
+        <div class="stat-num" style="color:var(--green)" id="statStew" aria-live="polite">142</div>
+        <div class="stat-sub"><span class="down">✓</span> all stations covered</div>
+        <div class="stat-bar" role="progressbar" aria-valuenow="95" aria-valuemin="0" aria-valuemax="100">
+          <div class="stat-bar-fill" style="width:95%;background:var(--green)"></div>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- MAP PANEL -->
+    <section class="map-panel" aria-label="Live crowd density map">
+      <div class="panel-header">
+        <h2 class="panel-title">CROWD DENSITY MAP</h2>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-secondary" style="padding:.25rem .6rem;font-size:.68rem;flex:none" onclick="refreshDensity()" aria-label="Refresh crowd density data">↻ Refresh</button>
+          <span class="panel-tag" aria-label="Updates every 5 seconds">Live · 5s</span>
+        </div>
+      </div>
+
+      <!-- Google Maps container -->
+      <div id="googleMap" role="img" aria-label="Google Maps showing M. Chinnaswamy Stadium with live crowd density heatmap overlay"></div>
+
+      <!-- Fallback canvas (if Maps API unavailable) -->
+      <div id="canvasWrap" aria-label="Stadium diagram with crowd density overlay">
+        <canvas id="venueCanvas" aria-hidden="true"></canvas>
+      </div>
+
+      <div class="map-legend" role="list" aria-label="Density colour legend">
+        <div class="legend-item" role="listitem"><div class="legend-dot" style="background:var(--green)" aria-hidden="true"></div><span>Clear &lt;40%</span></div>
+        <div class="legend-item" role="listitem"><div class="legend-dot" style="background:var(--amber)" aria-hidden="true"></div><span>Moderate 40–70%</span></div>
+        <div class="legend-item" role="listitem"><div class="legend-dot" style="background:#f07020" aria-hidden="true"></div><span>Busy 70–85%</span></div>
+        <div class="legend-item" role="listitem"><div class="legend-dot" style="background:var(--red)" aria-hidden="true"></div><span>Congested &gt;85%</span></div>
+      </div>
+    </section>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" aria-label="Gate status and live alerts">
+
+      <section class="panel" aria-label="Gate status">
+        <div class="panel-header">
+          <h2 class="panel-title">GATE STATUS</h2>
+          <span class="panel-tag">6 active</span>
+        </div>
+        <div class="gate-list" id="gateListOverview" role="list" aria-label="Gate wait times"></div>
+      </section>
+
+      <section class="panel" aria-label="Live alerts">
+        <div class="panel-header">
+          <h2 class="panel-title">LIVE ALERTS</h2>
+          <button class="btn btn-secondary" style="padding:.2rem .5rem;font-size:.65rem;flex:none" onclick="generateAlerts()" aria-label="Refresh alerts">↻</button>
+        </div>
+        <div class="alerts-list" id="alertsList" role="log" aria-live="polite" aria-relevant="additions" aria-label="Recent incident alerts"></div>
+      </section>
+
+    </aside>
+
+    <!-- BOTTOM ROW -->
+    <div class="overview-bottom" role="region" aria-label="Services and analytics">
+
+      <section class="panel" aria-label="Food and service queue times">
+        <div class="panel-header">
+          <h2 class="panel-title">FOOD &amp; SERVICES</h2>
+          <span class="panel-tag">Queue times</span>
+        </div>
+        <div class="conc-list" id="concList" role="list"></div>
+      </section>
+
+      <section class="panel" aria-label="Crowd flow chart">
+        <div class="panel-header">
+          <h2 class="panel-title">CROWD INFLOW</h2>
+          <span class="panel-tag">Last 2 hours</span>
+        </div>
+        <canvas id="flowChart" role="img" aria-label="Line chart showing crowd inflow over the past 2 hours"></canvas>
+      </section>
+
+      <section class="panel" aria-label="Quick navigation assistant">
+        <div class="panel-header">
+          <h2 class="panel-title">QUICK ROUTE</h2>
+          <button class="btn btn-secondary" style="padding:.2rem .5rem;font-size:.65rem;flex:none" onclick="switchTab('navigate',document.getElementById('tab-btn-navigate'))" aria-label="Open full navigation tab">Full nav →</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.55rem">
+          <div>
+            <label for="qFrom" class="sr-only">Your seat number</label>
+            <input id="qFrom" class="form-input" placeholder="Your seat (e.g. D-114)" aria-label="Your seat number" autocomplete="off" style="margin-bottom:.35rem">
+            <label for="qTo" class="sr-only">Destination</label>
+            <input id="qTo"   class="form-input" placeholder="Destination (e.g. Gate A)" aria-label="Destination" autocomplete="off">
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="quickRoute()" aria-label="Find crowd-aware route">🧭 Find Route</button>
+          <div id="quickRouteResult" role="region" aria-live="polite" style="font-size:.73rem;color:var(--text2);min-height:40px">
+            Try: <strong style="color:var(--cyan)">D-114</strong> → <strong style="color:var(--cyan)">Food Court</strong>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════╗
+     ║  TAB 2 — GATE CONTROL         ║
+     ╚══════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-gates" role="tabpanel" aria-labelledby="tab-btn-gates">
+  <div class="gate-control-layout">
+
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+        <h2 style="font-family:var(--f-display);font-size:1.2rem;font-weight:700">GATE OPERATIONS</h2>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-open" onclick="openAllGates()" aria-label="Open all gates">✅ Open All</button>
+          <button class="btn btn-close" onclick="closeAllGates()" aria-label="Close all gates">🚫 Close All</button>
+        </div>
+      </div>
+      <div class="gate-control-grid" id="gateControlGrid" role="list" aria-label="Gate control cards"></div>
+    </div>
+
+    <section class="gate-log panel" aria-label="Gate operations log">
+      <div class="panel-header">
+        <h2 class="panel-title">OPERATIONS LOG</h2>
+        <button class="btn btn-secondary" style="padding:.2rem .5rem;font-size:.65rem;flex:none" onclick="clearLog()" aria-label="Clear operations log">Clear</button>
+      </div>
+      <div class="gate-log-list" id="gateLog" role="log" aria-live="polite" aria-label="Gate operations event log"></div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════╗
+     ║  TAB 3 — NAVIGATE             ║
+     ╚══════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-navigate" role="tabpanel" aria-labelledby="tab-btn-navigate">
+  <div class="navigate-layout">
+
+    <div class="nav-form-panel">
+
+      <section class="panel" aria-label="Route finder">
+        <div class="panel-header">
+          <h2 class="panel-title">SMART NAVIGATION</h2>
+          <span class="panel-tag">AI-Assisted</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:.6rem" role="form" aria-label="Route finder form">
+          <div class="form-group">
+            <label class="form-label" for="navFrom">📍 Your Current Seat</label>
+            <input class="form-input" id="navFrom" placeholder="e.g. D-114, Block A Row 7" autocomplete="off" aria-required="true" aria-describedby="navFromHelp">
+            <span id="navFromHelp" class="sr-only">Enter your seat number or block and row</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="navToSelect">🎯 Destination</label>
+            <select class="form-select" id="navToSelect" aria-label="Choose your destination" onchange="document.getElementById('navToCustom').value=''">
+              <option value="">— Choose destination —</option>
+              <optgroup label="Gates">
+                <option value="gate a">Gate A — North (2 min wait)</option>
+                <option value="gate b">Gate B — Main (3 min wait)</option>
+                <option value="gate c">Gate C — East ⚠️ (11 min wait)</option>
+                <option value="gate d">Gate D — South (5 min wait)</option>
+                <option value="gate e">Gate E — VIP (1 min wait)</option>
+              </optgroup>
+              <optgroup label="Services">
+                <option value="food court">🍔 Food Court North</option>
+                <option value="beverages">🥤 Beverages East</option>
+                <option value="restroom">🚻 Restrooms (nearest)</option>
+                <option value="first aid">🏥 First Aid Station</option>
+                <option value="merchandise">👕 Merchandise Store</option>
+              </optgroup>
+              <optgroup label="Stands">
+                <option value="north stand">North Stand</option>
+                <option value="south stand">South Stand</option>
+                <option value="east stand">East Stand (near full)</option>
+                <option value="west stand">West Stand</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="navToCustom">✏️ Or type a destination</label>
+            <input class="form-input" id="navToCustom" placeholder="e.g. Gate B, restroom, exit…" autocomplete="off" onkeydown="if(event.key==='Enter')findRoute()">
+          </div>
+
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-primary" style="flex:2" onclick="findRoute()" aria-label="Find crowd-aware route">🧭 Find Route</button>
+            <button class="btn btn-secondary" style="flex:1" onclick="clearRoute()" aria-label="Clear route">Clear</button>
+          </div>
+
+          <div style="margin-top:.25rem">
+            <div class="form-label" style="margin-bottom:.35rem">Quick Destinations</div>
+            <div class="quick-dests" role="list" aria-label="Quick destination buttons">
+              <button class="dest-chip" role="listitem" onclick="setDest('Gate A')" aria-label="Navigate to Gate A">🚪 Gate A</button>
+              <button class="dest-chip" role="listitem" onclick="setDest('Food Court')" aria-label="Navigate to Food Court">🍔 Food</button>
+              <button class="dest-chip" role="listitem" onclick="setDest('Restroom')" aria-label="Navigate to nearest restroom">🚻 Restroom</button>
+              <button class="dest-chip" role="listitem" onclick="setDest('First Aid')" aria-label="Navigate to First Aid">🏥 First Aid</button>
+              <button class="dest-chip" role="listitem" onclick="setDest('Gate E')" aria-label="Navigate to VIP Gate E">⭐ VIP Gate</button>
+              <button class="dest-chip" role="listitem" onclick="setDest('Merchandise')" aria-label="Navigate to Merchandise">👕 Shop</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="route-result" id="routeResult" role="region" aria-live="polite" aria-label="Route instructions">
+        <div style="color:var(--text2);font-size:.78rem">
+          Enter your seat and choose a destination above to receive crowd-aware step-by-step directions.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAP PANEL -->
+    <section class="map-nav-panel" aria-label="Navigation map">
+      <div class="panel-header">
+        <h2 class="panel-title">STADIUM MAP</h2>
+        <span class="panel-tag">Interactive</span>
+      </div>
+      <canvas id="navMapCanvas" height="360" role="img" aria-label="Stadium layout showing sections, gates and services"></canvas>
+      <div style="font-size:.7rem;color:var(--text2);text-align:center">
+        Click on a gate or section for quick navigation
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════╗
+     ║  TAB 4 — ANALYTICS            ║
+     ╚══════════════════════════════════╝ -->
+<div class="tab-panel" id="tab-analytics" role="tabpanel" aria-labelledby="tab-btn-analytics">
+  <div class="analytics-layout">
+
+    <!-- KPI row -->
+    <div class="kpi-row" aria-label="Key performance indicators">
+      <div class="kpi-card">
+        <div class="kpi-icon" aria-hidden="true">👥</div>
+        <div class="kpi-value" style="color:var(--cyan)" id="kpiPeak">41,200</div>
+        <div class="kpi-label">Peak Attendance Today</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" aria-hidden="true">⏱️</div>
+        <div class="kpi-value" style="color:var(--green)" id="kpiAvgWait">3.8<span style="font-size:1rem">m</span></div>
+        <div class="kpi-label">Average Wait (all gates)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" aria-hidden="true">🚨</div>
+        <div class="kpi-value" style="color:var(--amber)" id="kpiIncidents">7</div>
+        <div class="kpi-label">Total Incidents Resolved</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" aria-hidden="true">⭐</div>
+        <div class="kpi-value" style="color:var(--purple)" id="kpiNPS">4.6</div>
+        <div class="kpi-label">Attendee Satisfaction Score</div>
+      </div>
+    </div>
+
+    <!-- Crowd flow chart -->
+    <section class="panel" aria-label="Crowd flow over time">
+      <div class="panel-header">
+        <h2 class="panel-title">CROWD FLOW — ALL GATES</h2>
+        <div class="time-filter" role="group" aria-label="Time range filter">
+          <button class="tf-btn active" onclick="setTimeRange('1h',this)" aria-pressed="true">1H</button>
+          <button class="tf-btn" onclick="setTimeRange('2h',this)" aria-pressed="false">2H</button>
+          <button class="tf-btn" onclick="setTimeRange('6h',this)" aria-pressed="false">6H</button>
+          <button class="tf-btn" onclick="setTimeRange('12h',this)" aria-pressed="false">12H</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="analyticsFlow" role="img" aria-label="Multi-line chart showing crowd flow at all gates over time"></canvas>
+      </div>
+    </section>
+
+    <!-- Gate comparison bar chart -->
+    <section class="panel" aria-label="Gate wait time comparison">
+      <div class="panel-header">
+        <h2 class="panel-title">GATE WAIT COMPARISON</h2>
+        <span class="panel-tag">Current</span>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="gateBarChart" role="img" aria-label="Bar chart comparing wait times across all 6 gates"></canvas>
+      </div>
+    </section>
+
+    <!-- Section density table -->
+    <section class="panel analytics-full" aria-label="Section density breakdown">
+      <div class="panel-header">
+        <h2 class="panel-title">SECTION DENSITY BREAKDOWN</h2>
+        <button class="btn btn-secondary" style="padding:.25rem .6rem;font-size:.68rem;flex:none" onclick="exportData()" aria-label="Export analytics data as CSV">⬇ Export CSV</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="heatmap-table" aria-label="Stadium section density data table">
+          <thead>
+            <tr>
+              <th scope="col">Section</th>
+              <th scope="col">Density</th>
+              <th scope="col">Est. Crowd</th>
+              <th scope="col">Status</th>
+              <th scope="col">Trend</th>
+              <th scope="col">Recommended Action</th>
+            </tr>
+          </thead>
+          <tbody id="densityTableBody" aria-live="polite"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+</main>
+
+<footer role="contentinfo">
+  <strong style="color:var(--cyan)">VenueFlow v3.0</strong> — Smart Venue Experience Platform &nbsp;·&nbsp;
+  Powered by <a href="https://cloud.google.com/maps-platform/" target="_blank" rel="noopener">Google Maps Platform</a> &nbsp;·&nbsp;
+  Built for <strong>Google Antigravity × Hack2Skill 2026</strong>
+  <div style="margin-top:.4rem;font-size:.6rem">Keyboard shortcut: <kbd style="background:var(--card2);border:1px solid var(--border2);padding:1px 4px;border-radius:3px">Ctrl+T</kbd> — Run Tests</div>
+</footer>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="false" role="status"></div>
+
+<!-- TEST PANEL -->
+<div class="test-panel" id="testPanel" role="dialog" aria-modal="true" aria-labelledby="testPanelTitle">
+  <div class="test-inner">
+    <div class="test-header">
+      <h2 class="test-title" id="testPanelTitle">🧪 VenueFlow Test Suite</h2>
+      <div style="display:flex;gap:.75rem;align-items:center">
+        <button class="run-tests-btn" onclick="runTests()" aria-label="Run all tests">▶ Run All Tests</button>
+        <button class="test-close" onclick="closeTestPanel()" aria-label="Close test panel">✕</button>
+      </div>
+    </div>
+    <div class="test-summary" id="testSummary" aria-live="polite">
+      <span style="color:var(--text2)">Click "Run All Tests" to execute the full test suite.</span>
+    </div>
+    <div class="test-results" id="testResults" role="list" aria-label="Test results"></div>
+  </div>
+</div>
+
+<!-- GATE DETAIL MODAL -->
+<div class="modal-overlay" id="gateModal" role="dialog" aria-modal="true" aria-labelledby="gateModalTitle" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="gateModalTitle">Gate Details</h2>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close gate details">✕</button>
+    </div>
+    <div class="modal-body" id="gateModalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════
+   VENUEFLOW v3.0 — CORE APPLICATION
+   Security: strict mode, input sanitisation, no eval
+════════════════════════════════════════════════ */
+'use strict';
+
+/* ── Constants ── */
+const TOTAL_CAPACITY = 45000;
+const VENUE_LAT = 12.9792, VENUE_LNG = 77.5996;
+
+const GATE_DEFS = [
+  { id:'A', name:'Gate A', loc:'North',   emoji:'🚪', lanes:4, cap:80,  lat:12.9803, lng:77.5996 },
+  { id:'B', name:'Gate B', loc:'Main',    emoji:'🏟️', lanes:6, cap:100, lat:12.9792, lng:77.6010 },
+  { id:'C', name:'Gate C', loc:'East',    emoji:'🚪', lanes:3, cap:60,  lat:12.9780, lng:77.5996 },
+  { id:'D', name:'Gate D', loc:'South',   emoji:'🚪', lanes:4, cap:70,  lat:12.9792, lng:77.5982 },
+  { id:'E', name:'Gate E', loc:'VIP',     emoji:'⭐', lanes:2, cap:40,  lat:12.9800, lng:77.6006 },
+  { id:'F', name:'Gate F', loc:'Press',   emoji:'📷', lanes:2, cap:30,  lat:12.9784, lng:77.5986 },
+];
+
+const SECTION_DEFS = [
+  { id:'North Upper', x:.20, y:.04, w:.60, h:.11, cap:6000 },
+  { id:'North Lower', x:.25, y:.15, w:.50, h:.09, cap:4000 },
+  { id:'South Upper', x:.20, y:.78, w:.60, h:.11, cap:6000 },
+  { id:'South Lower', x:.25, y:.68, w:.50, h:.09, cap:4000 },
+  { id:'East Upper',  x:.77, y:.18, w:.16, h:.56, cap:5500 },
+  { id:'East Lower',  x:.64, y:.24, w:.12, h:.46, cap:3500 },
+  { id:'West Upper',  x:.07, y:.18, w:.16, h:.56, cap:5500 },
+  { id:'West Lower',  x:.24, y:.24, w:.12, h:.46, cap:3500 },
+  { id:'NE Corner',   x:.66, y:.09, w:.16, h:.16, cap:2000 },
+  { id:'NW Corner',   x:.18, y:.09, w:.16, h:.16, cap:2000 },
+  { id:'SE Corner',   x:.66, y:.73, w:.16, h:.16, cap:2000 },
+  { id:'SW Corner',   x:.18, y:.73, w:.16, h:.16, cap:2000 },
+];
+
+const CONCESSIONS_DEFS = [
+  { name:'Food Court North', emoji:'🍔' },
+  { name:'Beverages East',   emoji:'🥤' },
+  { name:'Snack Bar South',  emoji:'🍿' },
+  { name:'Restrooms West',   emoji:'🚻' },
+  { name:'First Aid Centre', emoji:'🏥' },
+  { name:'Merchandise',      emoji:'👕' },
+];
+
+const ALERT_BANK = [
+  { type:'danger',  icon:'🚨', title:'Gate C overcrowded',         msg:'Density 94%. Redirect to Gate A / Gate E.' },
+  { type:'warn',    icon:'⚠️', title:'Section D — surge detected', msg:'Crowd up 18% in 5 min. Monitor closely.' },
+  { type:'info',    icon:'ℹ️', title:'Match break in 8 minutes',   msg:'Concession rush expected. Staff to stations.' },
+  { type:'success', icon:'✅', title:'Gate B wait reduced',         msg:'Wait down from 9 min to 3 min.' },
+  { type:'warn',    icon:'🌧️', title:'Light drizzle forecast',      msg:'20:30 IST. Covered exits now open.' },
+  { type:'info',    icon:'🅿️', title:'Parking Lot C cleared',       msg:'300 new spaces. Shuttle from West Entrance.' },
+  { type:'success', icon:'✅', title:'Medical team deployed',        msg:'First aid A restaffed. Response &lt;3 min.' },
+  { type:'danger',  icon:'🔥', title:'Food court queue surge',      msg:'22 min wait. Activate mobile kiosks now.' },
+];
+
+const TICKER_DATA = [
+  { text:'Gate A: 2 min wait', tag:'ok' },
+  { text:'Gate B: 3 min wait', tag:'ok' },
+  { text:'Gate C: 11 min — CONGESTED', tag:'bad' },
+  { text:'Gate D: 5 min wait', tag:'warn' },
+  { text:'Gate E VIP: 1 min wait', tag:'ok' },
+  { text:'East Stand 91% — NEAR FULL', tag:'bad' },
+  { text:'North Stand 74%', tag:'ok' },
+  { text:'Food Court: 18 min', tag:'warn' },
+  { text:'First Aid: All clear', tag:'ok' },
+  { text:'Parking A-B: Full', tag:'bad' },
+  { text:'Restrooms West: Available', tag:'ok' },
+  { text:'Stewards: 142 on duty', tag:'ok' },
+];
+
+const ROUTES = {
+  'gate a':      { steps:['Head to Aisle 12','Turn right at Section C stairwell','Follow North concourse signs','Gate A entrance on your left'], crowd:'Low', time:'4 min', dist:'320m', alt:null },
+  'gate b':      { steps:['Exit via Aisle 8 East','Follow concourse B signs past food kiosks','Continue 180m to Gate B'], crowd:'Moderate', time:'3 min', dist:'220m', alt:null },
+  'gate c':      { steps:['⚠️ Gate C is currently congested (11 min wait)','Recommended: use Gate D instead','Take south stairwell to main concourse','Follow blue Gate D signs'], crowd:'Critical', time:'6 min', dist:'410m', alt:'Gate D' },
+  'gate d':      { steps:['Head south on main concourse','Follow blue Gate D signs at Section B junction','Gate D entrance in 280m'], crowd:'Low', time:'5 min', dist:'350m', alt:null },
+  'gate e':      { steps:['VIP access — Aisle 2 West','Follow gold signage to VIP concourse','Gate E on your right'], crowd:'VIP lane — fast', time:'2 min', dist:'180m', alt:null },
+  'food court':  { steps:['Exit row via Aisle 5','Head to North concourse','Food Court at Section A junction — follow burger signs','Current queue: 18 min'], crowd:'Busy', time:'2 min walk', dist:'150m', alt:null },
+  'beverages':   { steps:['East concourse, Aisle 9','Beverages East is 120m ahead on right','Queue: ~8 min'], crowd:'Moderate', time:'3 min', dist:'200m', alt:null },
+  'restroom':    { steps:['Nearest: Aisle 14 (50m on your right)','West restrooms least crowded option','West queue: ~3 min'], crowd:'Low', time:'1 min', dist:'50m', alt:null },
+  'first aid':   { steps:['🚨 EMERGENCY: Call steward or dial 100','First Aid at Section C ground level','Follow green cross signs on every pillar'], crowd:'Priority corridor — always clear', time:'3 min', dist:'250m', alt:null },
+  'merchandise': { steps:['North-West concourse','Exit via Aisle 2','Follow blue merchandise signs','Current queue: ~10 min'], crowd:'Moderate', time:'5 min', dist:'380m', alt:null },
+  'north stand': { steps:['Follow North concourse from current section','Aisle numbers increase going North','Check seat row on ticket'], crowd:'74% capacity', time:'3 min', dist:'200m', alt:null },
+  'south stand': { steps:['Head to South concourse','Follow South Stand signs from Section B','Check ticket for aisle number'], crowd:'61% capacity', time:'4 min', dist:'310m', alt:null },
+  'east stand':  { steps:['⚠️ East Stand is near capacity (91%)','Use Gate C or NE Corner entrances','Stewards guiding flow at each aisle'], crowd:'Near full — allow extra time', time:'5 min', dist:'390m', alt:null },
+  'west stand':  { steps:['West concourse from Gate D side','Follow West Stand signs','Sections W1–W8 from south to north'], crowd:'Moderate', time:'4 min', dist:'280m', alt:null },
+};
+
+/* ── Application State ── */
+const AppState = {
+  densities:      {},
+  gateWaits:      {},
+  gateStatus:     {}, // 'open' | 'congested' | 'closed'
+  gateLanes:      {},
+  concessionWaits:{},
+  flowData:       [],
+  attendance:     34218,
+  incidents:      2,
+  googleMapLoaded:false,
+  googleMap:      null,
+  heatmapLayer:   null,
+  gateMarkers:    {},
+  rafId:          null,
+  resizeTimer:    null,
+  currentTab:     'overview',
+  operationsLog:  [],
+};
+
+/* ── Pure Utility Functions (all testable) ── */
+const VFUtils = {
+  rnd:      (a,b) => Math.random()*(b-a)+a,
+  rndInt:   (a,b) => Math.floor(Math.random()*(b-a)+a),
+  clamp:    (v,min,max) => Math.max(min,Math.min(max,v)),
+  lerp:     (a,b,t) => a+(b-a)*t,
+
+  sanitize: (str) => {
+    if (typeof str !== 'string') return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/\//g,'&#x2F;');
+  },
+
+  getGateStatus: (wait) => {
+    if (wait < 4)  return 'open';
+    if (wait < 8)  return 'moderate';
+    if (wait < 12) return 'congested';
+    return 'critical';
+  },
+
+  getDensityLabel: (d) => {
+    if (d < 0.40) return 'Clear';
+    if (d < 0.70) return 'Moderate';
+    if (d < 0.85) return 'Busy';
+    if (d < 0.95) return 'Congested';
+    return 'Critical';
+  },
+
+  getDensityColor: (d) => {
+    if (d < 0.40) return '#10d080';
+    if (d < 0.70) return '#f0a020';
+    if (d < 0.85) return '#f07020';
+    if (d < 0.95) return '#f04060';
+    return '#9060f0';
+  },
+
+  getWaitColor: (w) => w < 4 ? 'var(--green)' : w < 8 ? 'var(--amber)' : 'var(--red)',
+
+  calcAvgWait: (waits) => {
+    const vals = Object.values(waits);
+    return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
+  },
+
+  now: () => {
+    const t = new Date();
+    return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+  },
+
+  timeStr: (offsetMs=0) => {
+    const t = new Date(Date.now()+offsetMs);
+    return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+  },
+
+  formatNumber: (n) => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toString(),
+
+  findRoute: (to) => {
+    if (!to || typeof to !== 'string') return null;
+    const key = Object.keys(ROUTES).find(k => to.toLowerCase().includes(k));
+    return key ? ROUTES[key] : null;
+  },
+
+  validateSeat: (seat) => {
+    if (!seat || typeof seat !== 'string') return false;
+    return seat.trim().length >= 2;
+  },
+
+  gateWaitToPct: (w) => VFUtils.clamp((w/15)*100, 0, 100),
+
+  debounce: (fn, ms) => {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), ms); };
+  },
+};
+
+/* ── State Initializer ── */
+function initState() {
+  SECTION_DEFS.forEach(s => {
+    AppState.densities[s.id] = VFUtils.rnd(0.30, 0.92);
+  });
+  AppState.densities['East Upper'] = VFUtils.rnd(0.88, 0.96);
+  AppState.densities['East Lower'] = VFUtils.rnd(0.82, 0.92);
+
+  GATE_DEFS.forEach(g => {
+    AppState.gateWaits[g.id] = g.id === 'C' ? VFUtils.rndInt(9,13) : VFUtils.rndInt(1,7);
+    AppState.gateStatus[g.id] = g.id === 'C' ? 'congested' : 'open';
+    AppState.gateLanes[g.id] = g.lanes;
+  });
+
+  CONCESSIONS_DEFS.forEach(c => {
+    AppState.concessionWaits[c.name] = VFUtils.rndInt(3, 22);
+  });
+
+  for (let i=0; i<24; i++) {
+    AppState.flowData.push(Math.max(50, 500 + Math.sin(i*.4)*300 + VFUtils.rnd(-80,80)));
+  }
+}
+
+/* ── State Updater (called every 5s) ── */
+function tickState() {
+  SECTION_DEFS.forEach(s => {
+    AppState.densities[s.id] = VFUtils.clamp(
+      AppState.densities[s.id] + VFUtils.rnd(-0.04, 0.04), 0.05, 1.0
+    );
+  });
+
+  GATE_DEFS.forEach(g => {
+    if (AppState.gateStatus[g.id] === 'closed') return;
+    const delta = VFUtils.rndInt(-2, 2);
+    AppState.gateWaits[g.id] = VFUtils.clamp(AppState.gateWaits[g.id]+delta, 1, 18);
+    const s = VFUtils.getGateStatus(AppState.gateWaits[g.id]);
+    if (s === 'congested' || s === 'critical') AppState.gateStatus[g.id] = 'congested';
+    else AppState.gateStatus[g.id] = 'open';
+  });
+
+  CONCESSIONS_DEFS.forEach(c => {
+    AppState.concessionWaits[c.name] = VFUtils.clamp(
+      AppState.concessionWaits[c.name] + VFUtils.rndInt(-3, 3), 1, 30
+    );
+  });
+
+  AppState.flowData.shift();
+  const last = AppState.flowData[AppState.flowData.length-1];
+  AppState.flowData.push(Math.max(50, last + VFUtils.rnd(-150, 150)));
+
+  AppState.attendance = VFUtils.clamp(AppState.attendance + VFUtils.rndInt(-50, 120), 30000, 44000);
+
+  // Update DOM stats
+  const el = id => document.getElementById(id);
+  if (el('statAttend')) el('statAttend').textContent = AppState.attendance.toLocaleString();
+  if (el('statCap'))    el('statCap').textContent    = Math.round(AppState.attendance/TOTAL_CAPACITY*100)+'%';
+  const avg = VFUtils.calcAvgWait(AppState.gateWaits);
+  if (el('statWait'))   el('statWait').innerHTML     = avg.toFixed(1)+'<span style="font-size:1rem;color:var(--text2)">m</span>';
+  if (el('kpiAvgWait')) el('kpiAvgWait').innerHTML   = avg.toFixed(1)+'<span style="font-size:1rem">m</span>';
+}
+
+/* ════════════════════════════════════
+   RENDER FUNCTIONS
+════════════════════════════════════ */
+
+/* ── Overview Gate List ── */
+function renderGateList() {
+  const container = document.getElementById('gateListOverview');
+  if (!container) return;
+  const frag = document.createDocumentFragment();
+
+  GATE_DEFS.forEach(g => {
+    const wait  = AppState.gateWaits[g.id];
+    const pct   = VFUtils.gateWaitToPct(wait);
+    const col   = VFUtils.getWaitColor(wait);
+    const cong  = AppState.gateStatus[g.id] === 'congested' || wait >= 8;
+    const closed = AppState.gateStatus[g.id] === 'closed';
+
+    const div = document.createElement('div');
+    div.className = `gate-item${cong?' congested':''}`;
+    div.setAttribute('role', 'listitem');
+    div.setAttribute('tabindex', '0');
+    div.setAttribute('aria-label', `${g.name} ${g.loc}: ${closed?'Closed':wait+' minute wait'}`);
+    div.onclick = () => showGateModal(g.id);
+    div.onkeydown = e => { if(e.key==='Enter'||e.key===' ') { e.preventDefault(); showGateModal(g.id); } };
+
+    div.innerHTML = `
+      <div class="gate-icon-wrap" style="background:${col}22" aria-hidden="true">${g.emoji}</div>
+      <div class="gate-info">
+        <div class="gate-name">${VFUtils.sanitize(g.name)} — ${VFUtils.sanitize(g.loc)}</div>
+        <div class="gate-meta">${AppState.gateLanes[g.id]} lanes active</div>
+        <div class="gate-progress" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100">
+          <div class="gate-bar" style="width:${pct}%;background:${col}"></div>
+        </div>
+      </div>
+      <div>
+        <div class="gate-wait-badge" style="color:${col}">${closed ? '—' : wait+'m'}</div>
+        <div class="gate-wait-label">${closed ? 'Closed' : 'wait'}</div>
+      </div>`;
+    frag.appendChild(div);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+/* ── Alerts ── */
+function generateAlerts() {
+  const container = document.getElementById('alertsList');
+  if (!container) return;
+  const shuffled = [...ALERT_BANK].sort(()=>Math.random()-.5).slice(0,5);
+  const frag = document.createDocumentFragment();
+  shuffled.forEach((a,i) => {
+    const el = document.createElement('div');
+    el.className = `alert-card ${VFUtils.sanitize(a.type)}`;
+    el.setAttribute('role','listitem');
+    el.setAttribute('aria-label', `${a.type}: ${a.title}`);
+    el.innerHTML = `
+      <div class="alert-icon" aria-hidden="true">${a.icon}</div>
+      <div class="alert-body">
+        <div class="alert-title">${VFUtils.sanitize(a.title)}</div>
+        <div class="alert-msg">${a.msg}</div>
+      </div>
+      <time class="alert-time">${VFUtils.timeStr(-i*4*60000)}</time>`;
+    frag.appendChild(el);
+  });
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+/* ── Concessions ── */
+function renderConcessions() {
+  const container = document.getElementById('concList');
+  if (!container) return;
+  const frag = document.createDocumentFragment();
+  CONCESSIONS_DEFS.forEach(c => {
+    const w   = AppState.concessionWaits[c.name];
+    const pct = VFUtils.clamp((w/30)*100, 0, 100);
+    const col = VFUtils.getWaitColor(w);
+    const el  = document.createElement('div');
+    el.className = 'conc-row';
+    el.setAttribute('role','listitem');
+    el.setAttribute('aria-label', `${c.name}: ${w} minute wait`);
+    el.innerHTML = `
+      <div class="conc-emoji" aria-hidden="true">${c.emoji}</div>
+      <div class="conc-name">${VFUtils.sanitize(c.name)}</div>
+      <div class="conc-bar-wrap">
+        <div class="conc-bar" role="progressbar" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100">
+          <div class="conc-fill" style="width:${pct}%;background:${col}"></div>
+        </div>
+        <div class="conc-time" style="color:${col}">${w}m</div>
+      </div>`;
+    frag.appendChild(el);
+  });
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+/* ── Flow Chart (Overview) ── */
+function drawFlowChart() {
+  const cv = document.getElementById('flowChart');
+  if (!cv) return;
+  const W = cv.offsetWidth||400, H = 145;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const p = {l:32,r:8,t:8,b:22};
+  const cW = W-p.l-p.r, cH = H-p.t-p.b;
+  const max = Math.max(...AppState.flowData)*1.12;
+
+  // Grid lines
+  for (let i=0; i<=3; i++) {
+    const y = p.t+(cH/3)*i;
+    ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(p.l,y); ctx.lineTo(W-p.r,y); ctx.stroke();
+    ctx.fillStyle='rgba(90,110,130,.7)'; ctx.font='8px IBM Plex Mono,monospace'; ctx.textAlign='right';
+    ctx.fillText(Math.round(max-max*i/3), p.l-4, y+3);
+  }
+
+  const pts = AppState.flowData.map((v,i)=>({
+    x: p.l+(i/(AppState.flowData.length-1))*cW,
+    y: p.t+cH-(v/max)*cH,
+  }));
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0,p.t,0,p.t+cH);
+  grad.addColorStop(0,'rgba(0,212,240,.28)'); grad.addColorStop(1,'rgba(0,212,240,0)');
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+  for (let i=1;i<pts.length;i++) {
+    const mx=(pts[i-1].x+pts[i].x)/2;
+    ctx.bezierCurveTo(mx,pts[i-1].y,mx,pts[i].y,pts[i].x,pts[i].y);
+  }
+  ctx.lineTo(pts[pts.length-1].x,p.t+cH); ctx.lineTo(pts[0].x,p.t+cH);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+  for (let i=1;i<pts.length;i++) {
+    const mx=(pts[i-1].x+pts[i].x)/2;
+    ctx.bezierCurveTo(mx,pts[i-1].y,mx,pts[i].y,pts[i].x,pts[i].y);
+  }
+  ctx.strokeStyle='#00d4f0'; ctx.lineWidth=2; ctx.stroke();
+
+  // Current dot
+  const lp = pts[pts.length-1];
+  ctx.beginPath(); ctx.arc(lp.x,lp.y,4,0,Math.PI*2);
+  ctx.fillStyle='#00d4f0'; ctx.fill();
+
+  // X labels
+  ctx.fillStyle='rgba(90,110,130,.8)'; ctx.font='8px IBM Plex Mono,monospace'; ctx.textAlign='center';
+  [-120,-90,-60,-30,0].forEach(o => {
+    const idx = Math.round(((o+120)/120)*(AppState.flowData.length-1));
+    const x   = p.l+(VFUtils.clamp(idx,0,AppState.flowData.length-1)/(AppState.flowData.length-1))*cW;
+    ctx.fillText(VFUtils.timeStr(o*60000), x, H-5);
+  });
+}
+
+/* ── Fallback Canvas Venue Map ── */
+function drawVenueCanvas() {
+  const cv = document.getElementById('venueCanvas');
+  if (!cv) return;
+  const W = cv.offsetWidth||600, H = cv.offsetHeight||290;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle='#07111e'; ctx.fillRect(0,0,W,H);
+
+  // Field
+  const cx=W*.5, cy=H*.5, rx=W*.22, ry=H*.24;
+  ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+  ctx.fillStyle='#0f3520'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.15)'; ctx.font=`bold ${Math.round(W*.018)}px Syne,sans-serif`;
+  ctx.textAlign='center'; ctx.fillText('PITCH',cx,cy+5);
+
+  // Sections
+  SECTION_DEFS.forEach(s => {
+    const d   = AppState.densities[s.id]||.5;
+    const col = VFUtils.getDensityColor(d);
+    const sx=s.x*W, sy=s.y*H, sw=s.w*W, sh=s.h*H;
+    rRect(ctx,sx,sy,sw,sh,5);
+    ctx.fillStyle   = hexA(col, .25+d*.35); ctx.fill();
+    ctx.strokeStyle = hexA(col, .5+d*.3); ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.7)';
+    ctx.font=`${Math.round(W*.014)}px Outfit,sans-serif`; ctx.textAlign='center';
+    ctx.fillText(s.id, sx+sw/2, sy+sh/2+3);
+    ctx.fillStyle=col; ctx.font=`bold ${Math.round(W*.013)}px IBM Plex Mono,monospace`;
+    ctx.fillText(Math.round(d*100)+'%', sx+sw/2, sy+sh/2+14);
+  });
+
+  // Gate dots
+  const gatePos = [
+    {id:'A',px:.50,py:.00},{id:'B',px:1.0,py:.50},
+    {id:'C',px:.50,py:1.0},{id:'D',px:.00,py:.50},
+    {id:'E',px:.85,py:.00},{id:'F',px:.15,py:.00},
+  ];
+  gatePos.forEach(g => {
+    const w = AppState.gateWaits[g.id]||3;
+    const c = VFUtils.getWaitColor(w);
+    const gx = g.px*W*.94+W*.03, gy = g.py*H*.92+H*.04;
+    ctx.beginPath(); ctx.arc(gx,gy,10,0,Math.PI*2);
+    ctx.fillStyle=c; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#060b13'; ctx.font=`bold ${Math.round(W*.022)}px Syne,sans-serif`; ctx.textAlign='center';
+    ctx.fillText(g.id,gx,gy+4);
+  });
+}
+
+function rRect(ctx,x,y,w,h,r) {
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function hexA(hex,a) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ── Nav Map Canvas ── */
+function drawNavMap() {
+  const cv = document.getElementById('navMapCanvas');
+  if (!cv) return;
+  const W = cv.offsetWidth||600, H = 360;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#07111e'; ctx.fillRect(0,0,W,H);
+
+  // Field
+  ctx.beginPath(); ctx.ellipse(W*.5,H*.5,W*.22,H*.24,0,0,Math.PI*2);
+  ctx.fillStyle='#0f3520'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.lineWidth=1.5; ctx.stroke();
+
+  // Sections
+  SECTION_DEFS.forEach(s=>{
+    const d=AppState.densities[s.id]||.5, col=VFUtils.getDensityColor(d);
+    const sx=s.x*W, sy=s.y*H, sw=s.w*W, sh=s.h*H;
+    rRect(ctx,sx,sy,sw,sh,5);
+    ctx.fillStyle=hexA(col,.2+d*.25); ctx.fill();
+    ctx.strokeStyle=hexA(col,.45); ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.55)';
+    ctx.font=`${Math.round(W*.012)}px Outfit,sans-serif`; ctx.textAlign='center';
+    ctx.fillText(s.id,sx+sw/2,sy+sh/2+3);
+  });
+
+  // Gate markers with labels
+  const gatePos=[
+    {id:'A',px:.50,py:.02},{id:'B',px:.97,py:.48},
+    {id:'C',px:.50,py:.96},{id:'D',px:.03,py:.48},
+    {id:'E',px:.85,py:.02},{id:'F',px:.15,py:.02},
+  ];
+  gatePos.forEach(g=>{
+    const w=AppState.gateWaits[g.id]||3, c=VFUtils.getWaitColor(w);
+    const gx=g.px*W, gy=g.py*H;
+    ctx.beginPath(); ctx.arc(gx,gy,12,0,Math.PI*2);
+    ctx.fillStyle=c; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#060b13'; ctx.font=`bold ${Math.round(W*.02)}px Syne,sans-serif`; ctx.textAlign='center';
+    ctx.fillText(g.id,gx,gy+4);
+    ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font=`${Math.round(W*.01)}px IBM Plex Mono,monospace`;
+    ctx.fillText(w+'m',gx,gy+16);
+  });
+}
+
+/* ── Gate Control Grid ── */
+function renderGateControlGrid() {
+  const container = document.getElementById('gateControlGrid');
+  if (!container) return;
+  const frag = document.createDocumentFragment();
+
+  GATE_DEFS.forEach(g => {
+    const wait   = AppState.gateWaits[g.id];
+    const status = AppState.gateStatus[g.id];
+    const lanes  = AppState.gateLanes[g.id];
+    const col    = VFUtils.getWaitColor(wait);
+    const statusClass = status === 'closed' ? 'gate-closed' : status === 'congested' ? 'gate-congested' : 'gate-open';
+    const pillClass   = status === 'closed' ? 'pill-closed' : status === 'congested' ? 'pill-congested' : 'pill-open';
+    const pillTxt     = status === 'closed' ? 'Closed' : status === 'congested' ? 'Congested' : 'Open';
+
+    const card = document.createElement('article');
+    card.className = `gate-card ${statusClass}`;
+    card.setAttribute('role','listitem');
+    card.setAttribute('aria-label',`${g.name} ${g.loc}: ${status}, ${wait} minute wait`);
+    card.innerHTML = `
+      <div class="gate-card-header">
+        <div class="gate-card-name">${g.emoji} Gate ${g.id} <span style="font-size:.75rem;color:var(--text2);font-weight:400">${g.loc}</span></div>
+        <span class="gate-status-pill ${pillClass}">${pillTxt}</span>
+      </div>
+      <div class="gate-big-wait" style="color:${col}">${status==='closed'?'—':wait}</div>
+      <div class="gate-big-label">minutes wait</div>
+      <div class="gate-meta-grid">
+        <div class="gate-meta-item"><div class="gate-meta-key">Active Lanes</div><div class="gate-meta-value" id="laneVal-${g.id}">${lanes}</div></div>
+        <div class="gate-meta-item"><div class="gate-meta-key">Throughput</div><div class="gate-meta-value">${lanes*g.cap}</div></div>
+        <div class="gate-meta-item"><div class="gate-meta-key">Capacity/lane</div><div class="gate-meta-value">${g.cap}</div></div>
+        <div class="gate-meta-item"><div class="gate-meta-key">Queue</div><div class="gate-meta-value" style="color:${col}">${status==='closed'?'N/A':Math.round(wait*lanes*g.cap/60)}</div></div>
+      </div>
+      <div class="lane-adjuster">
+        <button class="lane-btn" onclick="adjustLane('${g.id}',-1)" aria-label="Decrease lanes for Gate ${g.id}">−</button>
+        <span class="lane-count" id="laneCount-${g.id}" aria-live="polite" aria-label="${lanes} lanes">${lanes}</span>
+        <button class="lane-btn" onclick="adjustLane('${g.id}',+1)" aria-label="Increase lanes for Gate ${g.id}">+</button>
+        <span class="lane-label">lanes</span>
+      </div>
+      <div class="gate-actions">
+        ${status !== 'closed' ?
+          `<button class="btn btn-close" onclick="setGateStatus('${g.id}','closed')" aria-label="Close Gate ${g.id}">🚫 Close</button>` :
+          `<button class="btn btn-open"  onclick="setGateStatus('${g.id}','open')"   aria-label="Open Gate ${g.id}">✅ Open</button>`}
+        <button class="btn btn-divert" onclick="divertGate('${g.id}')" aria-label="Activate crowd diversion for Gate ${g.id}">↗ Divert</button>
+      </div>`;
+    frag.appendChild(card);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+/* ── Analytics Charts ── */
+function drawAnalyticsFlow() {
+  const cv = document.getElementById('analyticsFlow');
+  if (!cv) return;
+  const W = cv.offsetWidth||700, H = 200;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const p={l:40,r:12,t:12,b:28};
+  const cW=W-p.l-p.r, cH=H-p.t-p.b;
+  const max = Math.max(...AppState.flowData)*1.15;
+
+  // Grid
+  for(let i=0;i<=4;i++){
+    const y=p.t+(cH/4)*i;
+    ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(p.l,y); ctx.lineTo(W-p.r,y); ctx.stroke();
+    ctx.fillStyle='rgba(90,110,130,.7)'; ctx.font='9px IBM Plex Mono,monospace'; ctx.textAlign='right';
+    ctx.fillText(Math.round(max-max*i/4), p.l-5, y+3);
+  }
+
+  // Smooth line + fill
+  const pts=AppState.flowData.map((v,i)=>({x:p.l+(i/(AppState.flowData.length-1))*cW,y:p.t+cH-(v/max)*cH}));
+  const grad=ctx.createLinearGradient(0,p.t,0,p.t+cH);
+  grad.addColorStop(0,'rgba(144,96,240,.3)'); grad.addColorStop(1,'rgba(144,96,240,0)');
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++){const mx=(pts[i-1].x+pts[i].x)/2;ctx.bezierCurveTo(mx,pts[i-1].y,mx,pts[i].y,pts[i].x,pts[i].y);}
+  ctx.lineTo(pts[pts.length-1].x,p.t+cH); ctx.lineTo(pts[0].x,p.t+cH);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++){const mx=(pts[i-1].x+pts[i].x)/2;ctx.bezierCurveTo(mx,pts[i-1].y,mx,pts[i].y,pts[i].x,pts[i].y);}
+  ctx.strokeStyle='#9060f0'; ctx.lineWidth=2.5; ctx.stroke();
+
+  // X labels
+  ctx.fillStyle='rgba(90,110,130,.8)'; ctx.font='9px IBM Plex Mono,monospace'; ctx.textAlign='center';
+  [-120,-90,-60,-30,0].forEach(o=>{
+    const idx=Math.round(((o+120)/120)*(AppState.flowData.length-1));
+    const x=p.l+(VFUtils.clamp(idx,0,AppState.flowData.length-1)/(AppState.flowData.length-1))*cW;
+    ctx.fillText(VFUtils.timeStr(o*60000),x,H-6);
+  });
+}
+
+function drawGateBarChart() {
+  const cv = document.getElementById('gateBarChart');
+  if (!cv) return;
+  const W = cv.offsetWidth||500, H = 200;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const p={l:40,r:16,t:16,b:30};
+  const cW=W-p.l-p.r, cH=H-p.t-p.b;
+  const maxW=16;
+  const bw=(cW/GATE_DEFS.length)*.55;
+  const gap=(cW/GATE_DEFS.length)*.45;
+
+  // Grid
+  for(let i=0;i<=4;i++){
+    const y=p.t+(cH/4)*i;
+    ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(p.l,y); ctx.lineTo(W-p.r,y); ctx.stroke();
+    ctx.fillStyle='rgba(90,110,130,.7)'; ctx.font='9px IBM Plex Mono,monospace'; ctx.textAlign='right';
+    ctx.fillText(Math.round(maxW-maxW*i/4)+'m', p.l-5, y+3);
+  }
+
+  GATE_DEFS.forEach((g,i)=>{
+    const w = AppState.gateWaits[g.id];
+    const x = p.l + i*(cW/GATE_DEFS.length) + gap/2;
+    const bh= (w/maxW)*cH;
+    const y = p.t+cH-bh;
+    const col= VFUtils.getWaitColor(w);
+    const r=4;
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+bw-r,y);
+    ctx.quadraticCurveTo(x+bw,y,x+bw,y+r); ctx.lineTo(x+bw,y+bh);
+    ctx.lineTo(x,y+bh); ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+    ctx.fillStyle=col+'44'; ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+    // Label
+    ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='bold 10px IBM Plex Mono,monospace'; ctx.textAlign='center';
+    ctx.fillText(g.id, x+bw/2, p.t+cH+14);
+    ctx.fillStyle=col; ctx.font='bold 10px IBM Plex Mono,monospace';
+    ctx.fillText(w+'m', x+bw/2, Math.max(y-5, p.t+8));
+  });
+}
+
+function renderDensityTable() {
+  const tbody = document.getElementById('densityTableBody');
+  if (!tbody) return;
+  const rows = SECTION_DEFS.map(s => {
+    const d    = AppState.densities[s.id]||.5;
+    const lbl  = VFUtils.getDensityLabel(d);
+    const col  = VFUtils.getDensityColor(d);
+    const est  = Math.round(d*s.cap);
+    const trend= VFUtils.rnd(-1,1) > 0 ? '↑' : '↓';
+    const trendCol = trend==='↑' ? 'var(--red)' : 'var(--green)';
+    const action = d > .85 ? 'Deploy stewards, open overflow' : d > .70 ? 'Monitor — may need action' : 'No action required';
+    return `<tr>
+      <td style="font-weight:600">${VFUtils.sanitize(s.id)}</td>
+      <td><div style="display:flex;align-items:center;gap:.5rem">
+        <div style="flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+          <div style="width:${Math.round(d*100)}%;height:100%;background:${col};border-radius:3px"></div>
+        </div>
+        <span style="font-family:var(--f-mono);font-size:.72rem;color:${col}">${Math.round(d*100)}%</span>
+      </div></td>
+      <td style="font-family:var(--f-mono)">${est.toLocaleString()}</td>
+      <td><span class="density-pill" style="background:${col}22;color:${col}">${lbl}</span></td>
+      <td style="color:${trendCol};font-weight:700">${trend} ${(VFUtils.rnd(.5,3)).toFixed(1)}%</td>
+      <td style="color:var(--text2);font-size:.7rem">${action}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('');
+}
+
+/* ── Ticker ── */
+function buildTicker() {
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+  const doubled = [...TICKER_DATA,...TICKER_DATA];
+  track.innerHTML = doubled.map(t=>
+    `<span class="ticker-item"><span class="chip chip-${t.tag}">${t.tag.toUpperCase()}</span>${VFUtils.sanitize(t.text)}</span>`
+  ).join('');
+}
+
+/* ════════════════════════════════════
+   GOOGLE MAPS
+════════════════════════════════════ */
+const VenueFlow = {
+  maps: {
+    init() {
+      AppState.googleMapLoaded = true;
+      const mapStyles=[
+        {elementType:'geometry',stylers:[{color:'#0d1b2a'}]},
+        {elementType:'labels.text.fill',stylers:[{color:'#6b8fa3'}]},
+        {elementType:'labels.text.stroke',stylers:[{color:'#0d1b2a'}]},
+        {featureType:'road',elementType:'geometry',stylers:[{color:'#1a3048'}]},
+        {featureType:'water',elementType:'geometry',stylers:[{color:'#071422'}]},
+        {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#0d2a1a'}]},
+        {featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]},
+        {featureType:'transit',elementType:'labels',stylers:[{visibility:'off'}]},
+      ];
+      AppState.googleMap = new google.maps.Map(document.getElementById('googleMap'), {
+        center:{lat:VENUE_LAT,lng:VENUE_LNG}, zoom:17,
+        styles:mapStyles, mapTypeControl:false, streetViewControl:false, fullscreenControl:true,
+      });
+      // Venue InfoWindow
+      const iw = new google.maps.InfoWindow({
+        content:`<div style="background:#0d1928;color:#d8e8f4;padding:8px;border-radius:6px;font-family:sans-serif;font-size:13px"><strong>M. Chinnaswamy Stadium</strong><br>IPL 2026 — VenueFlow Live</div>`
+      });
+      new google.maps.Marker({
+        position:{lat:VENUE_LAT,lng:VENUE_LNG}, map:AppState.googleMap,
+        title:'M. Chinnaswamy Stadium',
+        icon:{path:google.maps.SymbolPath.CIRCLE,scale:10,fillColor:'#00d4f0',fillOpacity:1,strokeColor:'#fff',strokeWeight:2},
+      }).addListener('click',()=>iw.open({map:AppState.googleMap}));
+
+      // Heatmap overlay
+      const heatPts=[
+        {lat:12.9800,lng:77.5990,w:10},{lat:12.9796,lng:77.6002,w:9},
+        {lat:12.9788,lng:77.5998,w:8},{lat:12.9792,lng:77.5988,w:6},
+        {lat:12.9785,lng:77.6005,w:5},{lat:12.9798,lng:77.6008,w:4},
+      ];
+      AppState.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+        data:heatPts.map(p=>({location:new google.maps.LatLng(p.lat,p.lng),weight:p.w})),
+        map:AppState.googleMap, radius:45,
+        gradient:['rgba(0,0,0,0)','rgba(16,208,128,1)','rgba(240,160,32,1)','rgba(240,112,32,1)','rgba(240,64,96,1)','rgba(144,96,240,1)'],
+      });
+
+      // Gate markers
+      GATE_DEFS.forEach(g=>{
+        const w=AppState.gateWaits[g.id]||3;
+        const c=g.id==='C'?'#f04060':w<4?'#10d080':'#f0a020';
+        const marker = new google.maps.Marker({
+          position:{lat:g.lat,lng:g.lng}, map:AppState.googleMap,
+          title:`Gate ${g.id} — ${w} min wait`,
+          label:{text:g.id,color:'#060b13',fontWeight:'bold',fontSize:'12px'},
+          icon:{path:google.maps.SymbolPath.CIRCLE,scale:14,fillColor:c,fillOpacity:.92,strokeColor:'#fff',strokeWeight:1.5},
+        });
+        marker.addListener('click',()=>showGateModal(g.id));
+        AppState.gateMarkers[g.id] = marker;
+      });
+    },
+    fallback() {
+      document.getElementById('googleMap').style.display='none';
+      document.getElementById('canvasWrap').style.display='block';
+      drawVenueCanvas();
+    },
+  }
+};
+
+/* ════════════════════════════════════
+   INTERACTIVE ACTIONS
+════════════════════════════════════ */
+
+/* Tab switching */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+  AppState.currentTab = name;
+
+  // Lazy draw charts for newly visible tab
+  requestAnimationFrame(()=>{
+    if (name==='overview')   { drawFlowChart(); if(!AppState.googleMapLoaded) drawVenueCanvas(); }
+    if (name==='gates')      { renderGateControlGrid(); }
+    if (name==='navigate')   { drawNavMap(); }
+    if (name==='analytics')  { drawAnalyticsFlow(); drawGateBarChart(); renderDensityTable(); }
+  });
+  toast(`Switched to ${name.charAt(0).toUpperCase()+name.slice(1)}`, 'info');
+}
+
+/* Gate actions */
+function setGateStatus(gateId, status) {
+  if (!GATE_DEFS.find(g=>g.id===gateId)) return;
+  AppState.gateStatus[gateId] = status;
+  if (status==='closed') AppState.gateWaits[gateId]=0;
+  logAction(`Gate ${VFUtils.sanitize(gateId)} <strong>${status==='closed'?'CLOSED':'OPENED'}</strong> by operator`);
+  renderGateControlGrid();
+  renderGateList();
+  updateGateMarker(gateId);
+  toast(`Gate ${gateId} ${status}`, status==='closed'?'warn':'success');
+}
+
+function adjustLane(gateId, delta) {
+  const g = GATE_DEFS.find(g=>g.id===gateId);
+  if (!g) return;
+  AppState.gateLanes[gateId] = VFUtils.clamp(AppState.gateLanes[gateId]+delta, 1, g.lanes+2);
+  const val = AppState.gateLanes[gateId];
+  const laneVal   = document.getElementById('laneVal-'+gateId);
+  const laneCount = document.getElementById('laneCount-'+gateId);
+  if (laneVal)   laneVal.textContent   = val;
+  if (laneCount) laneCount.textContent = val;
+  logAction(`Gate ${VFUtils.sanitize(gateId)} lanes adjusted to <strong>${val}</strong>`);
+  toast(`Gate ${gateId}: ${val} lanes active`, 'info');
+}
+
+function divertGate(gateId) {
+  logAction(`Crowd diversion <strong>ACTIVATED</strong> for Gate ${VFUtils.sanitize(gateId)}`);
+  toast(`Diversion active: Gate ${gateId} → Gate A & E`, 'warn');
+}
+
+function divertGateC() {
+  divertGate('C');
+  dismissEmergency();
+}
+
+function openAllGates() {
+  GATE_DEFS.forEach(g=>{ AppState.gateStatus[g.id]='open'; });
+  logAction('All gates <strong>OPENED</strong> by operator');
+  renderGateControlGrid(); renderGateList();
+  toast('All gates opened', 'success');
+}
+
+function closeAllGates() {
+  GATE_DEFS.forEach(g=>{ AppState.gateStatus[g.id]='closed'; AppState.gateWaits[g.id]=0; });
+  logAction('All gates <strong>CLOSED</strong> by operator');
+  renderGateControlGrid(); renderGateList();
+  toast('All gates closed', 'warn');
+}
+
+function updateGateMarker(gateId) {
+  const marker = AppState.gateMarkers[gateId];
+  if (!marker) return;
+  const status = AppState.gateStatus[gateId];
+  const c = status==='closed'?'#888':status==='congested'?'#f04060':'#10d080';
+  marker.setIcon({path:google.maps.SymbolPath.CIRCLE,scale:14,fillColor:c,fillOpacity:.92,strokeColor:'#fff',strokeWeight:1.5});
+}
+
+function refreshDensity() {
+  tickState();
+  if (!AppState.googleMapLoaded) drawVenueCanvas();
+  renderGateList(); renderConcessions(); drawFlowChart();
+  toast('Map data refreshed', 'info');
+}
+
+/* Navigation */
+function findRoute() {
+  const fromEl = document.getElementById('navFrom');
+  const selectEl= document.getElementById('navToSelect');
+  const customEl= document.getElementById('navToCustom');
+  const resultEl= document.getElementById('routeResult');
+  if (!resultEl) return;
+
+  const from = (fromEl?.value||'').trim();
+  const to   = (customEl?.value||selectEl?.value||'').trim();
+
+  if (!VFUtils.validateSeat(from)) {
+    resultEl.innerHTML = `<div style="color:var(--red);font-size:.78rem">⚠️ Please enter your seat number (e.g. D-114).</div>`;
+    fromEl?.focus();
+    return;
+  }
+  if (!to) {
+    resultEl.innerHTML = `<div style="color:var(--red);font-size:.78rem">⚠️ Please choose or type a destination.</div>`;
+    return;
+  }
+
+  const route = VFUtils.findRoute(to);
+  if (!route) {
+    resultEl.innerHTML = `
+      <div style="font-size:.8rem;font-weight:600;margin-bottom:.5rem">📍 ${VFUtils.sanitize(from)} → ${VFUtils.sanitize(to)}</div>
+      <div style="color:var(--text2);font-size:.75rem">Destination not found. Follow nearest concourse signs or ask a steward.<br>
+      <em>Try: Gate A, Gate B, Food Court, Restroom, First Aid, Merchandise</em></div>`;
+    return;
+  }
+
+  const altWarn = route.alt ? `<div class="crowd-warn">⚠️ Routing via <strong>${route.alt}</strong> — original destination is congested.</div>` : '';
+  const steps   = route.steps.map((s,i)=>`<div class="route-step"><div class="step-circle">${i+1}</div><div class="step-text">${s}</div></div>`).join('');
+  resultEl.innerHTML = `
+    <div style="font-size:.82rem;font-weight:700;color:var(--cyan);margin-bottom:.35rem">📍 ${VFUtils.sanitize(from)} → ${VFUtils.sanitize(to)}</div>
+    ${altWarn}
+    <div class="route-steps">${steps}</div>
+    <div class="route-summary">
+      <div class="route-summary-item"><span class="summary-icon">⏱️</span><span class="summary-val">${route.time}</span><span style="color:var(--text2)">walk</span></div>
+      <div class="route-summary-item"><span class="summary-icon">📏</span><span class="summary-val">${route.dist}</span></div>
+      <div class="route-summary-item"><span class="summary-icon">👥</span><span style="color:var(--text2);font-size:.72rem">${route.crowd}</span></div>
+    </div>`;
+  toast('Route found — ' + route.time + ' walk', 'success');
+}
+
+function clearRoute() {
+  const fromEl=document.getElementById('navFrom');
+  const selectEl=document.getElementById('navToSelect');
+  const customEl=document.getElementById('navToCustom');
+  const resultEl=document.getElementById('routeResult');
+  if(fromEl) fromEl.value='';
+  if(selectEl) selectEl.value='';
+  if(customEl) customEl.value='';
+  if(resultEl) resultEl.innerHTML='<div style="color:var(--text2);font-size:.78rem">Enter your seat and choose a destination above.</div>';
+}
+
+function setDest(dest) {
+  const customEl=document.getElementById('navToCustom');
+  const selectEl=document.getElementById('navToSelect');
+  if(customEl) customEl.value=dest;
+  if(selectEl) selectEl.value='';
+  toast('Destination: '+dest,'info');
+}
+
+function quickRoute() {
+  const from=document.getElementById('qFrom')?.value.trim();
+  const to  =document.getElementById('qTo')?.value.trim();
+  const result=document.getElementById('quickRouteResult');
+  if(!result) return;
+  if(!VFUtils.validateSeat(from)) { result.innerHTML='<span style="color:var(--red)">⚠️ Enter your seat number.</span>'; return; }
+  if(!to) { result.innerHTML='<span style="color:var(--red)">⚠️ Enter a destination.</span>'; return; }
+  const route=VFUtils.findRoute(to);
+  if(route) {
+    result.innerHTML=`<span style="color:var(--cyan)">✅ ${route.steps[0]}</span> · ${route.time}`;
+    toast('Quick route: '+route.time+' walk','success');
+  } else {
+    result.innerHTML=`<span style="color:var(--text2)">Follow concourse signs or ask a steward for "${VFUtils.sanitize(to)}"</span>`;
+  }
+}
+
+/* Emergency */
+function dismissEmergency() {
+  document.getElementById('emergencyBar').classList.remove('show');
+}
+
+/* Analytics */
+let currentTimeRange = '1h';
+function setTimeRange(range, btn) {
+  currentTimeRange = range;
+  document.querySelectorAll('.tf-btn').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+  btn.classList.add('active'); btn.setAttribute('aria-pressed','true');
+  drawAnalyticsFlow();
+  toast('Time range: '+range, 'info');
+}
+
+function exportData() {
+  const rows = ['Section,Density%,EstCrowd,Status'];
+  SECTION_DEFS.forEach(s=>{
+    const d=AppState.densities[s.id]||.5;
+    rows.push(`"${s.id}",${Math.round(d*100)},${Math.round(d*s.cap)},"${VFUtils.getDensityLabel(d)}"`);
+  });
+  const blob = new Blob([rows.join('\n')],{type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'),{href:url,download:'venueflow-data.csv'});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('CSV exported successfully','success');
+}
+
+/* Gate modal */
+function showGateModal(gateId) {
+  const g = GATE_DEFS.find(g=>g.id===gateId);
+  if (!g) return;
+  const wait   = AppState.gateWaits[gateId];
+  const status = AppState.gateStatus[gateId];
+  const col    = VFUtils.getWaitColor(wait);
+  document.getElementById('gateModalTitle').textContent = `${g.emoji} Gate ${g.id} — ${g.loc}`;
+  document.getElementById('gateModalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+      <div class="gate-meta-item"><div class="gate-meta-key">Status</div><div class="gate-meta-value" style="color:${col}">${status.toUpperCase()}</div></div>
+      <div class="gate-meta-item"><div class="gate-meta-key">Wait Time</div><div class="gate-meta-value" style="color:${col}">${status==='closed'?'Closed':wait+' min'}</div></div>
+      <div class="gate-meta-item"><div class="gate-meta-key">Active Lanes</div><div class="gate-meta-value">${AppState.gateLanes[gateId]}</div></div>
+      <div class="gate-meta-item"><div class="gate-meta-key">Throughput</div><div class="gate-meta-value">${AppState.gateLanes[gateId]*g.cap}/min</div></div>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      ${status!=='closed'?
+        `<button class="btn btn-close" style="flex:1" onclick="setGateStatus('${g.id}','closed');closeModal()">🚫 Close Gate</button>`:
+        `<button class="btn btn-open"  style="flex:1" onclick="setGateStatus('${g.id}','open');closeModal()">✅ Open Gate</button>`}
+      <button class="btn btn-divert" style="flex:1" onclick="divertGate('${g.id}');closeModal()">↗ Divert</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="switchTab('navigate',document.getElementById('tab-btn-navigate'));closeModal()">🧭 Navigate</button>
+    </div>`;
+  document.getElementById('gateModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('gateModal').classList.remove('open'); }
+
+/* Ops Log */
+function logAction(msg) {
+  const entry = { time:VFUtils.now(), msg };
+  AppState.operationsLog.unshift(entry);
+  if (AppState.operationsLog.length > 50) AppState.operationsLog.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const container = document.getElementById('gateLog');
+  if (!container) return;
+  if (!AppState.operationsLog.length) {
+    container.innerHTML='<div style="color:var(--text3);font-size:.72rem;padding:.5rem">No operations logged yet.</div>';
+    return;
+  }
+  container.innerHTML = AppState.operationsLog.map(e=>
+    `<div class="log-entry"><span class="log-time">${e.time}</span><span class="log-msg">${e.msg}</span></div>`
+  ).join('');
+}
+
+function clearLog() {
+  AppState.operationsLog = [];
+  renderLog();
+  toast('Operations log cleared','info');
+}
+
+/* Toast */
+function toast(msg, type='info') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<span>${type==='success'?'✅':type==='warn'?'⚠️':type==='error'?'❌':'ℹ️'}</span> ${VFUtils.sanitize(msg)}`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.classList.add('toast-out'); setTimeout(()=>el.remove(), 300); }, 2800);
+}
+
+/* ════════════════════════════════════
+   TEST SUITE (60+ tests)
+════════════════════════════════════ */
+function openTestPanel()  { document.getElementById('testPanel').classList.add('open');  runTests(); }
+function closeTestPanel() { document.getElementById('testPanel').classList.remove('open'); }
+
+function runTests() {
+  const results = [];
+  let pass=0, fail=0;
+
+  function test(group, name, fn) {
+    try { fn(); results.push({group,name,pass:true}); pass++; }
+    catch(e) { results.push({group,name,pass:false,err:e.message}); fail++; }
+  }
+  function assert(cond, msg='Assertion failed') { if(!cond) throw new Error(msg); }
+  function eq(a,b,msg) { if(a!==b) throw new Error(msg||`Expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
+  function range(v,mn,mx,msg) { if(v<mn||v>mx) throw new Error(msg||`${v} not in [${mn},${mx}]`); }
+
+  /* ── VFUtils ── */
+  test('Utils','clamp: mid value passes through',()=>eq(VFUtils.clamp(5,0,10),5));
+  test('Utils','clamp: below min → min',()=>eq(VFUtils.clamp(-5,0,10),0));
+  test('Utils','clamp: above max → max',()=>eq(VFUtils.clamp(15,0,10),10));
+  test('Utils','clamp: at exact min',()=>eq(VFUtils.clamp(0,0,10),0));
+  test('Utils','clamp: at exact max',()=>eq(VFUtils.clamp(10,0,10),10));
+  test('Utils','rnd: output in range',()=>{ for(let i=0;i<20;i++) range(VFUtils.rnd(5,10),5,10); });
+  test('Utils','rndInt: output is integer',()=>eq(VFUtils.rndInt(0,10)%1,0));
+  test('Utils','rndInt: within range',()=>{ for(let i=0;i<20;i++) range(VFUtils.rndInt(1,6),1,5); });
+  test('Utils','lerp: t=0 returns a',()=>eq(VFUtils.lerp(10,20,0),10));
+  test('Utils','lerp: t=1 returns b',()=>eq(VFUtils.lerp(10,20,1),20));
+  test('Utils','lerp: t=0.5 returns midpoint',()=>eq(VFUtils.lerp(10,20,0.5),15));
+
+  /* ── Sanitize ── */
+  test('Security','sanitize: escapes <',()=>assert(VFUtils.sanitize('<script>').includes('&lt;')));
+  test('Security','sanitize: escapes >',()=>assert(VFUtils.sanitize('>div').includes('&gt;')));
+  test('Security','sanitize: escapes &',()=>assert(VFUtils.sanitize('a&b').includes('&amp;')));
+  test('Security','sanitize: escapes "',()=>assert(VFUtils.sanitize('"quote"').includes('&quot;')));
+  test('Security','sanitize: non-string returns ""',()=>eq(VFUtils.sanitize(null),''));
+  test('Security','sanitize: number returns ""',()=>eq(VFUtils.sanitize(42),''));
+  test('Security','sanitize: safe string unchanged',()=>eq(VFUtils.sanitize('Hello World'),'Hello World'));
+  test('Security','sanitize: prevents XSS pattern',()=>assert(!VFUtils.sanitize('<img src=x onerror=alert(1)>').includes('<img')));
+
+  /* ── Gate Status ── */
+  test('Gate Logic','wait 1 → open',()=>eq(VFUtils.getGateStatus(1),'open'));
+  test('Gate Logic','wait 3 → open',()=>eq(VFUtils.getGateStatus(3),'open'));
+  test('Gate Logic','wait 4 → moderate',()=>eq(VFUtils.getGateStatus(4),'moderate'));
+  test('Gate Logic','wait 7 → moderate',()=>eq(VFUtils.getGateStatus(7),'moderate'));
+  test('Gate Logic','wait 8 → congested',()=>eq(VFUtils.getGateStatus(8),'congested'));
+  test('Gate Logic','wait 11 → congested',()=>eq(VFUtils.getGateStatus(11),'congested'));
+  test('Gate Logic','wait 12 → critical',()=>eq(VFUtils.getGateStatus(12),'critical'));
+  test('Gate Logic','wait 18 → critical',()=>eq(VFUtils.getGateStatus(18),'critical'));
+
+  /* ── Density Label ── */
+  test('Density','0.20 → Clear',()=>eq(VFUtils.getDensityLabel(.20),'Clear'));
+  test('Density','0.39 → Clear',()=>eq(VFUtils.getDensityLabel(.39),'Clear'));
+  test('Density','0.40 → Moderate',()=>eq(VFUtils.getDensityLabel(.40),'Moderate'));
+  test('Density','0.65 → Moderate',()=>eq(VFUtils.getDensityLabel(.65),'Moderate'));
+  test('Density','0.70 → Busy',()=>eq(VFUtils.getDensityLabel(.70),'Busy'));
+  test('Density','0.80 → Busy',()=>eq(VFUtils.getDensityLabel(.80),'Busy'));
+  test('Density','0.85 → Congested',()=>eq(VFUtils.getDensityLabel(.85),'Congested'));
+  test('Density','0.94 → Congested',()=>eq(VFUtils.getDensityLabel(.94),'Congested'));
+  test('Density','0.95 → Critical',()=>eq(VFUtils.getDensityLabel(.95),'Critical'));
+  test('Density','1.00 → Critical',()=>eq(VFUtils.getDensityLabel(1.0),'Critical'));
+
+  /* ── Density Color ── */
+  test('Colors','<0.4 → green',()=>eq(VFUtils.getDensityColor(.3),'#10d080'));
+  test('Colors','0.5 → amber',()=>eq(VFUtils.getDensityColor(.5),'#f0a020'));
+  test('Colors','0.75 → orange',()=>eq(VFUtils.getDensityColor(.75),'#f07020'));
+  test('Colors','0.90 → red',()=>eq(VFUtils.getDensityColor(.90),'#f04060'));
+  test('Colors','0.96 → purple',()=>eq(VFUtils.getDensityColor(.96),'#9060f0'));
+
+  /* ── Wait Color ── */
+  test('Colors','wait 2 → green',()=>eq(VFUtils.getWaitColor(2),'var(--green)'));
+  test('Colors','wait 5 → amber',()=>eq(VFUtils.getWaitColor(5),'var(--amber)'));
+  test('Colors','wait 9 → red',()=>eq(VFUtils.getWaitColor(9),'var(--red)'));
+
+  /* ── Route Finder ── */
+  test('Routing','null input → null',()=>eq(VFUtils.findRoute(null),null));
+  test('Routing','empty string → null',()=>eq(VFUtils.findRoute(''),null));
+  test('Routing','Gate A resolves',()=>assert(VFUtils.findRoute('Gate A')!==null));
+  test('Routing','gate a (lowercase) resolves',()=>assert(VFUtils.findRoute('gate a')!==null));
+  test('Routing','GATE A (uppercase) resolves',()=>assert(VFUtils.findRoute('GATE A')!==null));
+  test('Routing','Gate B resolves',()=>assert(VFUtils.findRoute('Gate B')!==null));
+  test('Routing','Gate C warns about congestion',()=>assert(VFUtils.findRoute('gate c').steps[0].includes('⚠️')));
+  test('Routing','Food Court resolves',()=>assert(VFUtils.findRoute('food court')!==null));
+  test('Routing','Restroom resolves',()=>assert(VFUtils.findRoute('restroom')!==null));
+  test('Routing','First Aid resolves',()=>assert(VFUtils.findRoute('first aid')!==null));
+  test('Routing','Merchandise resolves',()=>assert(VFUtils.findRoute('merchandise')!==null));
+  test('Routing','unknown dest → null',()=>eq(VFUtils.findRoute('unknown xyz'),null));
+  test('Routing','all routes have steps',()=>Object.values(ROUTES).forEach(r=>assert(r.steps.length>0,'Empty steps')));
+  test('Routing','all routes have crowd info',()=>Object.values(ROUTES).forEach(r=>assert(r.crowd.length>0,'No crowd')));
+  test('Routing','all routes have time',()=>Object.values(ROUTES).forEach(r=>assert(r.time.length>0,'No time')));
+
+  /* ── Seat Validation ── */
+  test('Validation','valid seat D-114 → true',()=>assert(VFUtils.validateSeat('D-114')));
+  test('Validation','valid seat A1 → true',()=>assert(VFUtils.validateSeat('A1')));
+  test('Validation','empty string → false',()=>assert(!VFUtils.validateSeat('')));
+  test('Validation','null → false',()=>assert(!VFUtils.validateSeat(null)));
+  test('Validation','single char → false',()=>assert(!VFUtils.validateSeat('A')));
+  test('Validation','whitespace only → false',()=>assert(!VFUtils.validateSeat('  ')));
+
+  /* ── Average Wait ── */
+  test('Analytics','avg of equal values',()=>eq(VFUtils.calcAvgWait({A:4,B:4,C:4}),4));
+  test('Analytics','avg correctness',()=>eq(VFUtils.calcAvgWait({A:2,B:4,C:6,D:8}),5));
+  test('Analytics','single gate',()=>eq(VFUtils.calcAvgWait({A:7}),7));
+  test('Analytics','empty → 0',()=>eq(VFUtils.calcAvgWait({}),0));
+
+  /* ── Wait to Percent ── */
+  test('Utils','0 wait → 0%',()=>eq(VFUtils.gateWaitToPct(0),0));
+  test('Utils','15 wait → 100%',()=>eq(VFUtils.gateWaitToPct(15),100));
+  test('Utils','30 wait clamps at 100',()=>eq(VFUtils.gateWaitToPct(30),100));
+  test('Utils','7.5 wait → 50%',()=>eq(VFUtils.gateWaitToPct(7.5),50));
+
+  /* ── Data Integrity ── */
+  test('Data','6 gates defined',()=>eq(GATE_DEFS.length,6));
+  test('Data','12 sections defined',()=>eq(SECTION_DEFS.length,12));
+  test('Data','6 concessions defined',()=>eq(CONCESSIONS_DEFS.length,6));
+  test('Data','gate IDs unique',()=>{ const ids=GATE_DEFS.map(g=>g.id); eq(new Set(ids).size,ids.length); });
+  test('Data','all gates have capacity>0',()=>GATE_DEFS.forEach(g=>assert(g.cap>0,`Gate ${g.id} cap`)));
+  test('Data','all gates have lanes>0',()=>GATE_DEFS.forEach(g=>assert(g.lanes>0,`Gate ${g.id} lanes`)));
+  test('Data','all sections have cap>0',()=>SECTION_DEFS.forEach(s=>assert(s.cap>0,`Section ${s.id} cap`)));
+  test('Data','all route keys lowercase',()=>Object.keys(ROUTES).forEach(k=>eq(k,k.toLowerCase())));
+  test('Data','alert bank not empty',()=>assert(ALERT_BANK.length>0));
+  test('Data','all alerts have type',()=>ALERT_BANK.forEach(a=>assert(['info','warn','danger','success'].includes(a.type))));
+
+  /* ── State Init ── */
+  const testState = (() => { const s={densities:{},gateWaits:{},gateLanes:{}}; SECTION_DEFS.forEach(sec=>s.densities[sec.id]=VFUtils.rnd(.3,.9)); GATE_DEFS.forEach(g=>{s.gateWaits[g.id]=g.id==='C'?10:VFUtils.rndInt(1,7);s.gateLanes[g.id]=g.lanes;}); return s; })();
+  test('State','all sections have density',()=>SECTION_DEFS.forEach(s=>assert(s.id in testState.densities)));
+  test('State','all gates have waits',()=>GATE_DEFS.forEach(g=>assert(g.id in testState.gateWaits)));
+  test('State','densities in 0–1',()=>Object.values(testState.densities).forEach(v=>range(v,0,1)));
+  test('State','gate waits in 1–18',()=>GATE_DEFS.forEach(g=>range(testState.gateWaits[g.id],1,18)));
+  test('State','Gate C initialised as congested (>=9)',()=>range(testState.gateWaits['C'],9,14));
+  test('State','lanes match gate definition',()=>GATE_DEFS.forEach(g=>eq(testState.gateLanes[g.id],g.lanes)));
+
+  /* Render */
+  const sumEl = document.getElementById('testSummary');
+  const resEl = document.getElementById('testResults');
+  sumEl.innerHTML = `
+    <div class="test-stat"><span style="color:var(--green);font-weight:700">✅ ${pass} passed</span></div>
+    <div class="test-stat"><span style="color:${fail?'var(--red)':'var(--green)'};font-weight:700">${fail?'❌':'🎉'} ${fail} failed</span></div>
+    <div class="test-stat"><span style="color:var(--text2)">Total: ${pass+fail}</span></div>`;
+
+  let lastGroup='';
+  resEl.innerHTML = results.map(r=>{
+    let html='';
+    if(r.group!==lastGroup) { html+=`<div class="test-group-header">${r.group}</div>`; lastGroup=r.group; }
+    html+=`<div class="test-row ${r.pass?'pass':'fail'}" role="listitem" aria-label="${r.pass?'PASS':'FAIL'}: ${r.name}">
+      <span class="icon">${r.pass?'✅':'❌'}</span>
+      <span class="test-name">${VFUtils.sanitize(r.name)}</span>
+      ${!r.pass?`<div><div class="test-err">${VFUtils.sanitize(r.err||'')}</div></div>`:''}
+    </div>`;
+    return html;
+  }).join('');
+}
+
+/* ════════════════════════════════════
+   INIT
+════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  initState();
+  buildTicker();
+  generateAlerts();
+  renderGateList();
+  renderConcessions();
+  logAction('VenueFlow system <strong>ONLINE</strong> — all sensors active');
+
+  requestAnimationFrame(() => {
+    drawFlowChart();
+    if (!AppState.googleMapLoaded) drawVenueCanvas();
+  });
+
+  // Emergency banner after 2.5s
+  setTimeout(() => {
+    document.getElementById('emergencyBar').classList.add('show');
+    toast('⚠️ Emergency alert: Gate C overcrowded', 'error');
+  }, 2500);
+
+  // Auto-update every 5s
+  setInterval(() => {
+    tickState();
+    if (AppState.currentTab === 'overview') {
+      renderGateList(); renderConcessions(); drawFlowChart();
+      if (!AppState.googleMapLoaded) drawVenueCanvas();
+      if (Math.random() < .12) generateAlerts();
+    }
+    if (AppState.currentTab === 'gates')     renderGateControlGrid();
+    if (AppState.currentTab === 'navigate')  drawNavMap();
+    if (AppState.currentTab === 'analytics') { drawAnalyticsFlow(); drawGateBarChart(); renderDensityTable(); }
+    // Update badge
+    const congested = GATE_DEFS.filter(g=>AppState.gateStatus[g.id]==='congested').length;
+    const badge = document.getElementById('alertBadge');
+    if (badge) { badge.textContent=congested; badge.style.display=congested?'inline':'none'; }
+  }, 5000);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey||e.metaKey) && e.key==='t') { e.preventDefault(); openTestPanel(); }
+    if (e.key==='Escape') { closeModal(); closeTestPanel(); }
+    if (e.key==='Enter') {
+      const ae = document.activeElement;
+      if (ae?.id==='navFrom'||ae?.id==='navToCustom'||ae?.id==='navToSelect') findRoute();
+      if (ae?.id==='qFrom'||ae?.id==='qTo') quickRoute();
+    }
+  });
+});
+
+// Debounced resize
+window.addEventListener('resize', VFUtils.debounce(() => {
+  if (!AppState.googleMapLoaded) drawVenueCanvas();
+  drawFlowChart(); drawNavMap();
+  if (AppState.currentTab==='analytics') { drawAnalyticsFlow(); drawGateBarChart(); }
+}, 200));
+</script>
+</body>
+</html>
