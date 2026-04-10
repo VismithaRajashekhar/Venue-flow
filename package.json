@@ -1,0 +1,20 @@
+{
+  "name": "venueflow",
+  "version": "2.0.0",
+  "description": "VenueFlow — Real-Time Smart Venue Experience Platform for large-scale sporting events",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["venue", "crowd-management", "sports", "real-time", "stadium", "google-maps"],
+  "author": "VenueFlow Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
